@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Differential Expression Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E9EEEE; --panel:#FBFCFC; --ink:#111819; --muted:#5C6B6E;
+    --line:#D2DBDB; --line-strong:#B8C4C4;
+    --accent:#0B7A6B; --accent-ink:#075E52; --accent-wash:#DDEDE9;
+    --up:#C0362C; --down:#2F6DB0; --ns:#9BA9AB;
+    --warn:#B4541E; --ok:#0B7A6B;
+    --shadow:0 1px 2px rgba(17,24,25,.05), 0 8px 24px rgba(17,24,25,.06);
+    --disp:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+    --body:'Inter',ui-sans-serif,system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--paper);color:var(--ink);font-family:var(--body);
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(var(--line) 0.7px, transparent 0.7px);
+    background-size:22px 22px;
+  }
+  button{font-family:inherit;cursor:pointer}
+  input,select{font-family:inherit}
+  ::selection{background:var(--accent-wash)}
+
+  /* ---------- shell ---------- */
+  .app{display:flex;flex-direction:column;min-height:100%}
+  header.bar{
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:14px 24px;border-bottom:1px solid var(--line);
+    background:linear-gradient(var(--panel),var(--panel));
+    box-shadow:0 1px 0 rgba(17,24,25,.02);
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .glyph{width:34px;height:34px;flex:none}
+  .wordmark{display:flex;flex-direction:column;line-height:1.05}
+  .wordmark b{font-family:var(--disp);font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;font-size:14px}
+  .wordmark span{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.02em}
+  .bar-spacer{flex:1 1 auto}
+
+  .conn{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:var(--paper)}
+  .seg button{border:0;background:transparent;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted)}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .apiwrap{display:flex;align-items:center;gap:6px}
+  .apiwrap input{
+    width:230px;max-width:44vw;padding:7px 9px;border:1px solid var(--line-strong);
+    border-radius:8px;background:var(--panel);font-family:var(--mono);font-size:12px;color:var(--ink)
+  }
+  .apiwrap input:disabled{opacity:.5}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--ns);flex:none;box-shadow:0 0 0 3px rgba(155,169,171,.18)}
+  .dot.ok{background:var(--ok);box-shadow:0 0 0 3px rgba(11,122,107,.18)}
+  .dot.bad{background:var(--up);box-shadow:0 0 0 3px rgba(192,54,44,.18)}
+  .dot.wait{background:var(--warn);box-shadow:0 0 0 3px rgba(180,84,30,.18);animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+
+  /* ---------- body layout ---------- */
+  main{display:grid;grid-template-columns:288px 1fr;gap:0;flex:1 1 auto;min-height:0}
+  aside{
+    border-right:1px solid var(--line);padding:20px;background:var(--panel);
+    display:flex;flex-direction:column;gap:22px;overflow:auto
+  }
+  .field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;
+    letter-spacing:.09em;color:var(--muted);margin-bottom:7px}
+  .field + .field{margin-top:16px}
+  .control{
+    width:100%;padding:9px 11px;border:1px solid var(--line-strong);border-radius:9px;
+    background:var(--paper);font-size:13px;color:var(--ink)
+  }
+  select.control{font-family:var(--mono)}
+  .control:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .hint{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .thresh input{font-family:var(--mono)}
+
+  .run{
+    width:100%;margin-top:4px;padding:12px 14px;border:0;border-radius:10px;
+    background:var(--accent);color:#fff;font-weight:600;font-size:14px;
+    display:flex;align-items:center;justify-content:center;gap:9px;
+    box-shadow:var(--shadow);transition:transform .06s ease, background .15s ease
+  }
+  .run:hover{background:var(--accent-ink)}
+  .run:active{transform:translateY(1px)}
+  .run:disabled{background:var(--ns);cursor:progress}
+  .run svg{width:16px;height:16px}
+
+  .legend{display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .legend .k{display:flex;align-items:center;gap:8px}
+  .swatch{width:12px;height:12px;border-radius:3px;flex:none}
+  .foot{margin-top:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    border-top:1px dashed var(--line-strong);padding-top:12px;line-height:1.6}
+
+  /* ---------- canvas ---------- */
+  section.canvas{padding:22px 26px;overflow:auto;min-width:0}
+  .summary{
+    display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:12px;
+    background:var(--panel);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px
+  }
+  .stat{padding:12px 16px;border-right:1px solid var(--line);min-width:88px;flex:1 1 auto}
+  .stat:last-child{border-right:0}
+  .stat .lab{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+  .stat .val{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:3px;white-space:nowrap}
+  .stat .val.up{color:var(--up)} .stat .val.down{color:var(--down)}
+  .stat.wide{flex:3 1 240px}
+  .stat.wide .val{font-size:13px;white-space:normal;font-weight:500}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:0}
+  .tabs button{
+    border:0;background:transparent;padding:10px 14px 12px;font-size:13px;font-weight:600;
+    color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px
+  }
+  .tabs button[aria-selected="true"]{color:var(--accent-ink);border-bottom-color:var(--accent)}
+  .panel-wrap{
+    border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;
+    background:var(--panel);box-shadow:var(--shadow);padding:18px;min-height:420px
+  }
+  .plotbox{width:100%;height:440px}
+  .plotbox svg{width:100%;height:100%;display:block}
+  .axis line,.axis path{stroke:var(--line-strong)}
+  .grid line{stroke:var(--line)}
+  .thr{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
+  .axlab{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+  .tick{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+
+  .tip{
+    position:fixed;pointer-events:none;z-index:40;background:var(--ink);color:#fff;
+    font-family:var(--mono);font-size:11px;padding:6px 8px;border-radius:6px;
+    opacity:0;transform:translate(-50%,-130%);transition:opacity .08s;white-space:nowrap;box-shadow:var(--shadow)
+  }
+  .tip b{color:#9fe0d5}
+
+  /* heatmap */
+  .hm{display:flex;gap:0;height:440px;font-family:var(--mono)}
+  .hm-rows{display:flex;flex-direction:column;justify-content:stretch;padding-right:8px;text-align:right}
+  .hm-rows span{font-size:9.5px;color:var(--muted);line-height:1;flex:1;display:flex;align-items:center;justify-content:flex-end}
+  .hm-grid{flex:1;display:grid;gap:1px;border:1px solid var(--line);background:var(--line)}
+  .hm-cell{width:100%;height:100%}
+  .hm-legend{display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .hm-scale{height:10px;width:150px;border-radius:3px;
+    background:linear-gradient(90deg,var(--down),#f4f7f7 50%,var(--up))}
+
+  /* DE table */
+  .tbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .tbar input{padding:8px 10px;border:1px solid var(--line-strong);border-radius:8px;
+    background:var(--paper);font-family:var(--mono);font-size:12px;width:200px}
+  .csv{margin-left:auto;padding:8px 12px;border:1px solid var(--accent);color:var(--accent-ink);
+    background:transparent;border-radius:8px;font-weight:600;font-size:12px}
+  .csv:hover{background:var(--accent-wash)}
+  .tscroll{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:12px}
+  thead th{position:sticky;top:0;background:var(--panel);text-align:right;padding:9px 14px;
+    border-bottom:1px solid var(--line-strong);cursor:pointer;white-space:nowrap;color:var(--muted);font-weight:600}
+  thead th:first-child{text-align:left}
+  thead th[data-active]{color:var(--accent-ink)}
+  tbody td{padding:7px 14px;text-align:right;border-bottom:1px solid var(--line)}
+  tbody td:first-child{text-align:left;font-weight:600;color:var(--ink)}
+  tbody tr:hover{background:var(--accent-wash)}
+  .chip{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10.5px;font-weight:600}
+  .chip.up{background:rgba(192,54,44,.12);color:var(--up)}
+  .chip.down{background:rgba(47,109,176,.12);color:var(--down)}
+
+  /* states */
+  .state{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:12px;min-height:420px;color:var(--muted)}
+  .state h3{font-family:var(--disp);color:var(--ink);margin:0;font-size:18px;font-weight:600}
+  .state p{margin:0;max-width:380px;font-size:13px}
+  .state.err h3{color:var(--up)}
+  .spinner{width:34px;height:34px;border:3px solid var(--line-strong);border-top-color:var(--accent);
+    border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hide{display:none!important}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:820px){
+    main{grid-template-columns:1fr}
+    aside{border-right:0;border-bottom:1px solid var(--line)}
+    .apiwrap input{width:160px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <svg class="glyph" viewBox="0 0 40 40" aria-hidden="true">
+        <rect width="40" height="40" rx="9" fill="#111819"/>
+        <line x1="20" y1="7" x2="20" y2="33" stroke="#3a4749" stroke-width="1"/>
+        <line x1="7" y1="27" x2="33" y2="27" stroke="#3a4749" stroke-width="1"/>
+        <circle cx="14" cy="24" r="2" fill="#2F6DB0"/>
+        <circle cx="11" cy="20" r="2" fill="#2F6DB0"/>
+        <circle cx="26" cy="23" r="2" fill="#C0362C"/>
+        <circle cx="29" cy="17" r="2.4" fill="#C0362C"/>
+        <circle cx="20" cy="29" r="1.7" fill="#9BA9AB"/>
+        <circle cx="23" cy="27" r="1.7" fill="#9BA9AB"/>
+        <circle cx="17" cy="28" r="1.7" fill="#9BA9AB"/>
+        <circle cx="31" cy="12" r="2.6" fill="#0B7A6B"/>
+      </svg>
+      <div class="wordmark">
+        <b>Expression Console</b>
+        <span>GEO series · limma differential expression</span>
+      </div>
+    </div>
+    <div class="bar-spacer"></div>
+    <div class="conn">
+      <div class="seg" role="group" aria-label="Data source">
+        <button id="mDemo" aria-pressed="true">Demo</button>
+        <button id="mLive" aria-pressed="false">Live</button>
+      </div>
+      <div class="apiwrap">
+        <span class="dot" id="hdot" title="backend status"></span>
+        <input id="apiUrl" placeholder="https://your-api-host" value="http://localhost:8000" disabled spellcheck="false">
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="field">
+        <label for="series">GEO series</label>
+        <select id="series" class="control"></select>
+        <div class="hint">or type any accession below</div>
+      </div>
+      <div class="field">
+        <label for="accn">Accession</label>
+        <input id="accn" class="control" style="font-family:var(--mono)" placeholder="GSE10072" spellcheck="false">
+      </div>
+
+      <div class="field thresh">
+        <label>Significance thresholds</label>
+        <div class="row2">
+          <div>
+            <input id="thLfc" class="control" type="number" step="0.5" min="0" value="1">
+            <div class="hint">|log2FC| &gt;</div>
+          </div>
+          <div>
+            <input id="thPadj" class="control" type="number" step="0.01" min="0" max="1" value="0.05">
+            <div class="hint">adj. P &lt;</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="run" id="runBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 4l14 8-14 8z" fill="currentColor" stroke="none"/></svg>
+        Run pipeline
+      </button>
+
+      <div class="legend">
+        <div class="k"><span class="swatch" style="background:var(--up)"></span>Upregulated in Case</div>
+        <div class="k"><span class="swatch" style="background:var(--down)"></span>Downregulated in Case</div>
+        <div class="k"><span class="swatch" style="background:var(--ns)"></span>Not significant</div>
+      </div>
+
+      <div class="foot" id="foot">
+        Demo mode shows synthetic results so the interface is explorable without a
+        backend. Switch to Live and point it at your deployed plumber API to run real
+        GEO analyses.
+      </div>
+    </aside>
+
+    <section class="canvas">
+      <div class="summary hide" id="summary"></div>
+
+      <div class="tabs hide" id="tabs" role="tablist">
+        <button role="tab" data-view="volcano" aria-selected="true">Volcano</button>
+        <button role="tab" data-view="pca" aria-selected="false">PCA</button>
+        <button role="tab" data-view="heatmap" aria-selected="false">Heatmap</button>
+        <button role="tab" data-view="table" aria-selected="false">DE genes</button>
+      </div>
+
+      <div class="panel-wrap" id="panel">
+        <div class="state" id="stateEmpty">
+          <svg width="46" height="46" viewBox="0 0 40 40"><rect width="40" height="40" rx="9" fill="#111819"/><circle cx="14" cy="24" r="2.4" fill="#2F6DB0"/><circle cx="29" cy="17" r="2.8" fill="#C0362C"/><circle cx="20" cy="29" r="1.9" fill="#9BA9AB"/></svg>
+          <h3>Pick a series and run the pipeline</h3>
+          <p>Choose a GEO accession on the left, set your log2FC and adjusted-p cutoffs, then run to see the volcano, PCA, heatmap, and ranked DE genes.</p>
+        </div>
+
+        <div class="state hide" id="stateRun">
+          <div class="spinner"></div>
+          <h3>Running differential expression</h3>
+          <p id="runMsg">Downloading, normalizing, and fitting the model…</p>
+        </div>
+
+        <div class="state err hide" id="stateErr">
+          <h3 id="errTitle">Couldn't run that series</h3>
+          <p id="errMsg"></p>
+        </div>
+
+        <div id="view" class="hide"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+"use strict";
+/* ---------------- registry ---------------- */
+const REGISTRY = [
+  ["GSE2034","Breast cancer (classic DE example)"],
+  ["GSE45827","Breast cancer subtypes"],
+  ["GSE10072","Lung cancer vs normal"],
+  ["GSE53757","Kidney cancer (RNA-seq)"],
+  ["GSE14520","Liver cancer"],
+  ["GSE39582","Colorectal cancer"],
+  ["GSE48350","Alzheimer's disease"],
+  ["GSE55235","Rheumatoid arthritis"],
+  ["GSE15641","Influenza infection"],
+  ["GSE11121","Type 2 Diabetes"],
+];
+
+/* ---------------- state ---------------- */
+const S = { mode:"demo", api:"http://localhost:8000", data:null, view:"volcano",
+            thLfc:1, thPadj:0.05, sort:{key:"adjP",dir:1} };
+
+const $ = id => document.getElementById(id);
+const el = (t,c)=>{const e=document.createElement(t); if(c) e.className=c; return e;};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmtP = p => p===0 ? "0" : (p<1e-4 ? p.toExponential(1) : p.toPrecision(2));
+const fmtF = x => (x>=0?"+":"")+x.toFixed(2);
+
+/* seeded RNG for reproducible demo */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(rng){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+/* ---------------- demo generator ---------------- */
+function demoData(gse,desc){
+  const rng = mulberry32([...gse].reduce((h,c)=>h*31+c.charCodeAt(0)|0, 7)>>>0);
+  const nBg=1200, nUp=170, nDown=150;
+  const de=[];
+  const mkP = lfc => { const z=Math.abs(lfc); const p=Math.exp(-z*2.6)*(0.02+0.98*rng()); return clamp(p,1e-12,1); };
+  for(let i=0;i<nBg;i++){const lfc=gauss(rng)*0.55; de.push({gene:"BG"+i, logFC:lfc, adjP: clamp(0.15+0.85*rng(),0,1)});}
+  for(let i=0;i<nUp;i++){const lfc=1.0+rng()*3.4; de.push({gene:geneName(rng), logFC:lfc, adjP:mkP(lfc)});}
+  for(let i=0;i<nDown;i++){const lfc=-(1.0+rng()*3.4); de.push({gene:geneName(rng), logFC:lfc, adjP:mkP(lfc)});}
+  // PCA: two clusters
+  const nC=24, nT=24, pca=[];
+  for(let i=0;i<nC;i++) pca.push({sample:"GSM"+(100+i), PC1:-6+gauss(rng)*1.8, PC2:gauss(rng)*2.4, group:"Control"});
+  for(let i=0;i<nT;i++) pca.push({sample:"GSM"+(200+i), PC1: 6+gauss(rng)*1.8, PC2:gauss(rng)*2.4, group:"Case"});
+  // heatmap 40 genes x 40 samples, block structure, row z-scored
+  const genes=[], z=[], groups=[...Array(20).fill("Control"),...Array(20).fill("Case")];
+  for(let g=0;g<40;g++){
+    const dir=rng()<0.5?1:-1, eff=0.8+rng()*1.4, row=[];
+    for(let s=0;s<40;s++){const isCase=s>=20; row.push((isCase?dir*eff:-dir*eff)+gauss(rng)*0.7);}
+    const m=row.reduce((a,b)=>a+b,0)/row.length, sd=Math.sqrt(row.reduce((a,b)=>a+(b-m)**2,0)/row.length)||1;
+    genes.push(geneName(rng)); z.push(row.map(v=>(v-m)/sd));
+  }
+  return { gse, title:desc+" — synthetic demo (not real GEO data)", platform:"GPL_demo",
+    n_samples:pca.length, n_genes:de.length, grouped:true, group_col:"characteristics_ch1",
+    group_counts:{Control:nC,Case:nT}, status:"ok", de, pca, pc_var:[38.4,13.1],
+    heatmap:{genes,z,groups} };
+}
+const SYL=["BRC","TP","EGF","MYC","VEGF","IL","CDK","MMP","STAT","FOX","KRT","COL","SPP","MKI","CCN","HOX","WNT","AKT","PTEN","RB"];
+function geneName(rng){return SYL[Math.floor(rng()*SYL.length)]+(1+Math.floor(rng()*24));}
+
+/* ---------------- live fetch ---------------- */
+async function fetchLive(gse){
+  const base=S.api.replace(/\/+$/,"");
+  const r=await fetch(base+"/analyze",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({gse, logfc:S.thLfc, padj:S.thPadj})});
+  if(!r.ok) throw new Error("Backend returned "+r.status+" "+r.statusText);
+  const j=await r.json();
+  if(j.status && j.status!=="ok" && !j.de) throw new Error(j.status);
+  // normalize R field names -> internal shape
+  const de=(j.de||[]).map(d=>({gene:d.gene, logFC:+d.logFC, adjP:+ (d["adj.P.Val"]??d.adjP)}));
+  return { gse:j.gse||gse, title:j.title||"", platform:j.platform||"—",
+    n_samples:j.n_samples, n_genes:j.n_genes, grouped:!!j.grouped, group_col:j.group_col||"",
+    group_counts:j.group_counts||{}, status:j.status||"ok", de,
+    pca:(j.pca||[]).map(p=>({sample:p.sample,PC1:+p.PC1,PC2:+p.PC2,group:p.group})),
+    pc_var:j.pc_var||[0,0], heatmap:j.heatmap||{genes:[],z:[],groups:[]} };
+}
+
+/* ---------------- run ---------------- */
+async function run(){
+  const gse=($("accn").value.trim()||$("series").value).toUpperCase();
+  if(!gse){ return; }
+  S.thLfc=parseFloat($("thLfc").value)||1; S.thPadj=parseFloat($("thPadj").value)||0.05;
+  setState("run"); $("runBtn").disabled=true;
+  $("runMsg").textContent = S.mode==="live"
+    ? "Contacting backend — downloading, normalizing, and fitting the model. On a live server this can take a few minutes."
+    : "Generating synthetic results…";
+  try{
+    let d;
+    if(S.mode==="live"){ d=await fetchLive(gse); }
+    else { await new Promise(r=>setTimeout(r,650)); d=demoData(gse, descOf(gse)); }
+    S.data=d; render();
+  }catch(e){
+    $("errTitle").textContent = S.mode==="live" ? "Backend request failed" : "Something went wrong";
+    $("errMsg").textContent = (""+e.message) +
+      (S.mode==="live" ? " · Check the API URL, that the container is running, and that CORS allows this origin." : "");
+    setState("err");
+  }finally{ $("runBtn").disabled=false; }
+}
+
+/* ---------------- render ---------------- */
+function derive(d){
+  const lfc=S.thLfc, p=S.thPadj; let up=0,down=0;
+  for(const g of d.de){ if(g.adjP<p && g.logFC>lfc) up++; else if(g.adjP<p && g.logFC<-lfc) down++; }
+  return {up,down};
+}
+function render(){
+  const d=S.data; if(!d) return;
+  const {up,down}=derive(d);
+  const gc=d.group_counts||{};
+  const split=Object.keys(gc).length ? Object.entries(gc).map(([k,v])=>k+" "+v).join(" · ") : "—";
+  $("summary").innerHTML="";
+  const stats=[
+    ["Series",d.gse,""],["Platform",d.platform||"—",""],
+    ["Samples",d.n_samples??"—",""],["Genes tested",fmtInt(d.n_genes),""],
+    ["Groups",split,""],["Up",up,"up"],["Down",down,"down"],
+    ["Title",d.title||"—","wide"]
+  ];
+  for(const [lab,val,cls] of stats){
+    const s=el("div","stat"+(cls==="wide"?" wide":"")); const l=el("div","lab"); l.textContent=lab;
+    const v=el("div","val"+(cls==="up"?" up":cls==="down"?" down":"")); v.textContent=val;
+    s.append(l,v); $("summary").appendChild(s);
+  }
+  $("summary").classList.remove("hide"); $("tabs").classList.remove("hide");
+  setState("view"); drawView();
+}
+const fmtInt=n=> (n==null?"—":(""+n).replace(/\B(?=(\d{3})+(?!\d))/g,","));
+
+function drawView(){
+  const host=$("view"); host.innerHTML="";
+  if(S.view==="volcano") host.appendChild(volcano(S.data));
+  else if(S.view==="pca") host.appendChild(pca(S.data));
+  else if(S.view==="heatmap") host.appendChild(heatmap(S.data));
+  else host.appendChild(deTable(S.data));
+}
+
+/* ----- volcano (SVG, live-recolored by thresholds, hover tooltip) ----- */
+function volcano(d){
+  const W=760,H=440,pl=54,pr=18,pt=18,pb=44;
+  const pts=d.de.map(g=>({x:g.logFC, y:-Math.log10(Math.max(g.adjP,1e-12)), gene:g.gene, p:g.adjP}));
+  const xmax=Math.max(2, ...pts.map(p=>Math.abs(p.x)))*1.05;
+  const ymax=Math.max(2, ...pts.map(p=>p.y))*1.05;
+  const sx=v=>pl+(v+xmax)/(2*xmax)*(W-pl-pr);
+  const sy=v=>H-pb-(v/ymax)*(H-pt-pb);
+  const lfc=S.thLfc, tp=-Math.log10(S.thPadj);
+  const box=el("div","plotbox");
+  const ns=[],upA=[],dnA=[];
+  for(const p of pts){ (p.y>tp && p.x>lfc)?upA.push(p):(p.y>tp && p.x<-lfc)?dnA.push(p):ns.push(p); }
+  const svg=svgEl("svg",{viewBox:`0 0 ${W} ${H}`});
+  // grid + axes
+  const g=svgEl("g",{class:"grid"});
+  for(let i=0;i<=4;i++){const yy=pt+i*(H-pt-pb)/4; g.appendChild(svgEl("line",{x1:pl,y1:yy,x2:W-pr,y2:yy}));}
+  svg.appendChild(g);
+  svg.appendChild(svgEl("line",{class:"thr",x1:sx(lfc),y1:pt,x2:sx(lfc),y2:H-pb}));
+  svg.appendChild(svgEl("line",{class:"thr",x1:sx(-lfc),y1:pt,x2:sx(-lfc),y2:H-pb}));
+  svg.appendChild(svgEl("line",{class:"thr",x1:pl,y1:sy(tp),x2:W-pr,y2:sy(tp)}));
+  // points
+  const layer=(arr,fill,op)=>{const gg=svgEl("g",{fill,"fill-opacity":op});
+    for(const p of arr){gg.appendChild(svgEl("circle",{cx:sx(p.x).toFixed(1),cy:sy(p.y).toFixed(1),r:2.7}));} return gg;};
+  svg.appendChild(layer(ns,"var(--ns)",0.5));
+  svg.appendChild(layer(dnA,"var(--down)",0.75));
+  svg.appendChild(layer(upA,"var(--up)",0.8));
+  // axes labels + ticks
+  for(let i=-Math.floor(xmax);i<=Math.floor(xmax);i++){ if(i%2!==0&&xmax>5)continue;
+    svg.appendChild(txt(sx(i),H-pb+15,i,"tick","middle")); }
+  for(let i=0;i<=Math.floor(ymax);i+=Math.ceil(ymax/5)){ svg.appendChild(txt(pl-8,sy(i)+3,i,"tick","end")); }
+  svg.appendChild(txt(W/2,H-6,"log2 fold change","axlab","middle"));
+  const yl=txt(14,H/2,"-log10 adj. P","axlab","middle"); yl.setAttribute("transform",`rotate(-90 14 ${H/2})`); svg.appendChild(yl);
+  box.appendChild(svg);
+  // hover
+  const all=pts.map(p=>({...p, cx:sx(p.x), cy:sy(p.y)}));
+  svg.addEventListener("pointermove",ev=>{
+    const r=svg.getBoundingClientRect(), scale=W/r.width;
+    const mx=(ev.clientX-r.left)*scale, my=(ev.clientY-r.top)*scale;
+    let best=null,bd=64;
+    for(const p of all){const dd=(p.cx-mx)**2+(p.cy-my)**2; if(dd<bd){bd=dd;best=p;}}
+    if(best){showTip(ev.clientX,ev.clientY,`<b>${best.gene}</b>  log2FC ${fmtF(best.x)}  ·  adjP ${fmtP(best.p)}`);}
+    else hideTip();
+  });
+  svg.addEventListener("pointerleave",hideTip);
+  return box;
+}
+
+/* ----- PCA ----- */
+function pca(d){
+  const W=760,H=440,pl=52,pr=18,pt=18,pb=44;
+  const P=d.pca; if(!P.length){return emptyPanel("No PCA coordinates returned for this series.");}
+  const xs=P.map(p=>p.PC1), ys=P.map(p=>p.PC2);
+  const xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+  const padx=(xmax-xmin)*0.08||1, pady=(ymax-ymin)*0.08||1;
+  const sx=v=>pl+(v-xmin+padx)/((xmax-xmin)+2*padx)*(W-pl-pr);
+  const sy=v=>H-pb-(v-ymin+pady)/((ymax-ymin)+2*pady)*(H-pt-pb);
+  const col=g=>g==="Case"?"var(--up)":g==="Control"?"var(--down)":"var(--accent)";
+  const box=el("div","plotbox"); const svg=svgEl("svg",{viewBox:`0 0 ${W} ${H}`});
+  svg.appendChild(svgEl("line",{class:"thr",x1:sx((xmin+xmax)/2),y1:pt,x2:sx((xmin+xmax)/2),y2:H-pb}));
+  for(const p of P){const c=svgEl("circle",{cx:sx(p.PC1).toFixed(1),cy:sy(p.PC2).toFixed(1),r:5,
+    fill:col(p.group),"fill-opacity":0.85,stroke:"#fff","stroke-width":1});
+    c.addEventListener("pointermove",ev=>showTip(ev.clientX,ev.clientY,`<b>${p.sample}</b>  ${p.group}`));
+    c.addEventListener("pointerleave",hideTip); svg.appendChild(c);}
+  svg.appendChild(txt(W/2,H-6,`PC1 (${(d.pc_var[0]||0)}%)`,"axlab","middle"));
+  const yl=txt(14,H/2,`PC2 (${(d.pc_var[1]||0)}%)`,"axlab","middle"); yl.setAttribute("transform",`rotate(-90 14 ${H/2})`); svg.appendChild(yl);
+  // legend
+  const groups=[...new Set(P.map(p=>p.group))];
+  groups.forEach((gp,i)=>{svg.appendChild(svgEl("circle",{cx:W-pr-90,cy:pt+12+i*18,r:5,fill:col(gp)}));
+    svg.appendChild(txt(W-pr-78,pt+16+i*18,gp,"tick","start"));});
+  box.appendChild(svg); return box;
+}
+
+/* ----- heatmap ----- */
+function heatmap(d){
+  const hm=d.heatmap; if(!hm.genes||!hm.genes.length){return emptyPanel("No heatmap matrix returned for this series.");}
+  const wrap=el("div"); const grid=el("div","hm");
+  const rows=el("div","hm-rows"); hm.genes.forEach(g=>{const s=el("span"); s.textContent=g; rows.appendChild(s);});
+  const cells=el("div","hm-grid"); const nCol=hm.z[0].length;
+  cells.style.gridTemplateColumns=`repeat(${nCol},1fr)`;
+  for(let r=0;r<hm.z.length;r++) for(let c=0;c<nCol;c++){
+    const v=clamp(hm.z[r][c],-2.5,2.5); const cell=el("div","hm-cell"); cell.style.background=divColor(v); cells.appendChild(cell);
+  }
+  grid.append(rows,cells);
+  const lg=el("div","hm-legend");
+  lg.innerHTML=`<span>−2.5</span><span class="hm-scale"></span><span>+2.5</span><span style="margin-left:10px">row z-score · top ${hm.genes.length} variable genes</span>`;
+  wrap.append(grid,lg); return wrap;
+}
+function divColor(v){ // blue - white - red
+  const t=(v+2.5)/5; const down=[47,109,176],mid=[244,247,247],up=[192,54,44];
+  const lerp=(a,b,f)=>a.map((x,i)=>Math.round(x+(b[i]-x)*f));
+  const rgb = t<0.5 ? lerp(down,mid,t*2) : lerp(mid,up,(t-0.5)*2);
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
+/* ----- DE table ----- */
+function deTable(d){
+  const wrap=el("div");
+  const bar=el("div","tbar");
+  const search=el("input"); search.placeholder="filter gene…"; search.id="deSearch";
+  const info=el("span"); info.style.cssText="font-family:var(--mono);font-size:12px;color:var(--muted)";
+  const csv=el("button","csv"); csv.textContent="Download CSV";
+  csv.onclick=()=>downloadCSV(d);
+  bar.append(search,csv,info);
+  const scroll=el("div","tscroll"); const table=el("table");
+  const cols=[["gene","Gene"],["logFC","log2FC"],["adjP","adj.P.Val"],["dir","Dir"]];
+  const thead=el("thead"); const trh=el("tr");
+  cols.forEach(([k,lab])=>{const th=el("th"); th.textContent=lab; th.onclick=()=>{ if(k==="dir")return;
+    S.sort.dir = S.sort.key===k ? -S.sort.dir : 1; S.sort.key=k; fill();}; if(S.sort.key===k)th.dataset.active="1"; trh.appendChild(th);});
+  thead.appendChild(trh); const tbody=el("tbody"); table.append(thead,tbody); scroll.appendChild(table);
+  wrap.append(bar,scroll);
+  function fill(){
+    const q=search.value.trim().toUpperCase(); const lfc=S.thLfc,p=S.thPadj;
+    let rows=d.de.filter(g=>!q||g.gene.toUpperCase().includes(q));
+    rows.sort((a,b)=> S.sort.key==="gene" ? a.gene.localeCompare(b.gene)*S.sort.dir : (a[S.sort.key]-b[S.sort.key])*S.sort.dir);
+    const sig=rows.filter(g=>g.adjP<p&&Math.abs(g.logFC)>lfc).length;
+    info.textContent=`${fmtInt(rows.length)} rows · ${fmtInt(sig)} significant`;
+    const show=rows.slice(0,300); tbody.innerHTML="";
+    for(const g of show){const tr=el("tr");
+      const dir = (g.adjP<p&&g.logFC>lfc)?"up":(g.adjP<p&&g.logFC<-lfc)?"down":"";
+      tr.innerHTML=`<td>${g.gene}</td><td>${fmtF(g.logFC)}</td><td>${fmtP(g.adjP)}</td>`+
+        `<td>${dir?`<span class="chip ${dir}">${dir}</span>`:"·"}</td>`;
+      tbody.appendChild(tr);}
+    if(rows.length>300){const tr=el("tr");tr.innerHTML=`<td colspan="4" style="text-align:center;color:var(--muted)">showing first 300 — download CSV for all</td>`;tbody.appendChild(tr);}
+  }
+  search.oninput=fill; fill(); return wrap;
+}
+function downloadCSV(d){
+  const lines=["gene,logFC,adj.P.Val"]; d.de.forEach(g=>lines.push(`${g.gene},${g.logFC},${g.adjP}`));
+  const blob=new Blob([lines.join("\n")],{type:"text/csv"}); const a=el("a");
+  a.href=URL.createObjectURL(blob); a.download=`${d.gse}_DE_genes.csv`; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ---------------- svg + tip helpers ---------------- */
+function svgEl(t,attrs){const e=document.createElementNS("http://www.w3.org/2000/svg",t);
+  for(const k in attrs)e.setAttribute(k,attrs[k]); return e;}
+function txt(x,y,s,cls,anchor){const t=svgEl("text",{x,y,class:cls,"text-anchor":anchor||"start"}); t.textContent=s; return t;}
+function emptyPanel(msg){const d=el("div","state");d.innerHTML=`<h3>Nothing to plot</h3><p>${msg}</p>`;return d;}
+function showTip(x,y,html){const t=$("tip");t.innerHTML=html;t.style.left=x+"px";t.style.top=y+"px";t.style.opacity=1;}
+function hideTip(){$("tip").style.opacity=0;}
+
+/* ---------------- state switch ---------------- */
+function setState(s){
+  for(const id of ["stateEmpty","stateRun","stateErr","view"]) $(id).classList.add("hide");
+  ({empty:"stateEmpty",run:"stateRun",err:"stateErr",view:"view"})[s] && $(({empty:"stateEmpty",run:"stateRun",err:"stateErr",view:"view"})[s]).classList.remove("hide");
+}
+const descOf=gse=>{const r=REGISTRY.find(x=>x[0]===gse);return r?r[1]:"Custom accession";};
+
+/* ---------------- health check ---------------- */
+let healthTimer=null;
+async function checkHealth(){
+  if(S.mode!=="live"){ $("hdot").className="dot"; return; }
+  $("hdot").className="dot wait";
+  try{const base=S.api.replace(/\/+$/,"");
+    const r=await fetch(base+"/health",{method:"GET"});
+    $("hdot").className = r.ok?"dot ok":"dot bad";
+    $("hdot").title = r.ok?"backend reachable":"backend responded "+r.status;
+  }catch(e){$("hdot").className="dot bad"; $("hdot").title="unreachable — check URL / CORS";}
+}
+
+/* ---------------- wiring ---------------- */
+function initSeries(){
+  const sel=$("series"); REGISTRY.forEach(([id,desc])=>{const o=el("option");o.value=id;o.textContent=`${id} — ${desc}`;sel.appendChild(o);});
+  sel.value="GSE10072";
+}
+function setMode(m){
+  S.mode=m; const live=m==="live";
+  $("mDemo").setAttribute("aria-pressed",(!live).toString());
+  $("mLive").setAttribute("aria-pressed",live.toString());
+  $("apiUrl").disabled=!live;
+  $("foot").textContent = live
+    ? "Live mode calls POST /analyze on your API. The R backend must run as a container (plumber) on a host that runs R — Vercel serves this page only, not the R process."
+    : "Demo mode shows synthetic results so the interface is explorable without a backend. Switch to Live and point it at your deployed plumber API to run real GEO analyses.";
+  checkHealth();
+}
+$("mDemo").onclick=()=>setMode("demo");
+$("mLive").onclick=()=>setMode("live");
+$("apiUrl").oninput=e=>{S.api=e.target.value; clearTimeout(healthTimer); healthTimer=setTimeout(checkHealth,500);};
+$("runBtn").onclick=run;
+$("accn").addEventListener("keydown",e=>{if(e.key==="Enter")run();});
+[$("thLfc"),$("thPadj")].forEach(inp=>inp.addEventListener("input",()=>{
+  S.thLfc=parseFloat($("thLfc").value)||1; S.thPadj=parseFloat($("thPadj").value)||0.05;
+  if(S.data) render();
+}));
+$("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  $("tabs").querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected","false"));
+  b.setAttribute("aria-selected","true"); S.view=b.dataset.view; drawView();
+});
+initSeries(); setMode("demo");
+</script>
+</body>
+</html>
