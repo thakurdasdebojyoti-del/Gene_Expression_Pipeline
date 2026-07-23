@@ -1,0 +1,40 @@
+version: 0.2
+
+# Builds the Expression Console container (frontend + API in one image) on AWS
+# CodeBuild — which has plenty of disk, unlike CloudShell — and pushes it to ECR.
+#
+# Place this file at the ROOT of the repo. Build context is ./backend, which must
+# contain: Dockerfile, plumber.R, start.R, www/index.html
+
+env:
+  variables:
+    AWS_REGION: us-east-1
+    IMAGE_REPO: geo-de-api
+    IMAGE_TAG: latest
+
+phases:
+  pre_build:
+    commands:
+      - echo "Checking build context..."
+      - test -f backend/Dockerfile     || (echo "MISSING backend/Dockerfile" && exit 1)
+      - test -f backend/plumber.R      || (echo "MISSING backend/plumber.R" && exit 1)
+      - test -f backend/start.R        || (echo "MISSING backend/start.R" && exit 1)
+      - test -f backend/www/index.html || (echo "MISSING backend/www/index.html" && exit 1)
+      - echo "Logging in to Amazon ECR..."
+      - ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+      - REPO_URI=$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO
+      - aws ecr describe-repositories --repository-names $IMAGE_REPO --region $AWS_REGION || aws ecr create-repository --repository-name $IMAGE_REPO --region $AWS_REGION
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
+
+  build:
+    commands:
+      - echo "Building image (installs R + Bioconductor - expect 15-25 min)..."
+      - docker build -t $IMAGE_REPO:$IMAGE_TAG ./backend
+      - docker tag $IMAGE_REPO:$IMAGE_TAG $REPO_URI:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo "Pushing to ECR..."
+      - docker push $REPO_URI:$IMAGE_TAG
+      - echo "DONE -> $REPO_URI:$IMAGE_TAG"
+      - echo "Next - App Runner, Create service, Container registry, port 8000, memory 2 GB"
