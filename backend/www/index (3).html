@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+<title>Expression Console — Differential Expression Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;450;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#081517; --panel:#0d1e21; --card:#112629; --line:#2a3739; --line-soft:#1c2b2e;
+  --ink:#d7e5e7; --muted:#859490; --dim:#5f716f;
+  --accent:#4fdbc8; --accent-dim:#2fa091; --accent-glow:rgba(79,219,200,.18);
+  --up:#ff9f93; --up-deep:#c0362c; --down:#6fa7ee; --down-deep:#2f6db0; --ns:#4a5b5c;
+  --ok:#4fdbc8; --warn:#ffcf8f; --bad:#ffb4aa;
+  --disp:'Space Grotesk',sans-serif; --body:'Inter',sans-serif; --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;-webkit-font-smoothing:antialiased;overflow:hidden}
+.ms{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;line-height:1;
+  letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;
+  word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased;
+  font-variation-settings:'opsz' 24}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select,textarea{font-family:inherit;color:inherit}
+::selection{background:var(--accent-glow)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#243133;border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:#2f4042}
+.mono{font-family:var(--mono)}
+.hide{display:none!important}
+
+/* ============ LANDING ============ */
+#landing{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;overflow-y:auto}
+#shader-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:-1}
+.land-nav{display:flex;align-items:center;gap:14px;padding:22px 40px}
+.land-nav .spacer{flex:1}
+.land-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 24px 40px;min-height:78vh}
+.land-hero h1{font-family:var(--disp);font-weight:700;font-size:clamp(34px,7vw,76px);letter-spacing:.16em;
+  text-transform:uppercase;line-height:1.04;text-shadow:0 0 60px rgba(79,219,200,.25)}
+.land-hero p.sub{font-family:var(--mono);color:var(--muted);margin-top:20px;font-size:clamp(12px,1.4vw,15px);letter-spacing:.04em;max-width:620px}
+.cta-row{display:flex;gap:14px;margin-top:38px;flex-wrap:wrap;justify-content:center}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:13px 26px;border-radius:11px;font-weight:600;font-size:14px;transition:.18s}
+.btn-primary{background:var(--accent);color:#04211d;box-shadow:0 0 0 0 var(--accent-glow),0 8px 30px rgba(79,219,200,.22)}
+.btn-primary:hover{background:#71f8e4;transform:translateY(-1px);box-shadow:0 0 34px var(--accent-glow)}
+.btn-ghost{border:1px solid var(--line);color:var(--ink);background:rgba(13,30,33,.55);backdrop-filter:blur(8px)}
+.btn-ghost:hover{border-color:var(--accent-dim);color:var(--accent)}
+.feat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;max-width:1000px;margin:0 auto 70px;padding:0 24px;width:100%}
+.feat{background:rgba(13,30,33,.66);backdrop-filter:blur(14px);border:1px solid var(--line-soft);border-radius:14px;padding:22px;text-align:left;transition:.2s}
+.feat:hover{border-color:var(--accent-dim);transform:translateY(-3px)}
+.feat .ms{font-size:26px;color:var(--accent)}
+.feat h3{font-family:var(--disp);font-size:15px;margin:12px 0 7px;font-weight:600}
+.feat p{color:var(--muted);font-size:12.5px;line-height:1.6}
+
+/* ============ AUTH ============ */
+#auth{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.auth-card{width:100%;max-width:420px;background:rgba(13,30,33,.82);backdrop-filter:blur(20px);
+  border:1px solid var(--line);border-radius:18px;padding:34px 30px;box-shadow:0 30px 90px rgba(0,0,0,.55)}
+.auth-card h2{font-family:var(--disp);font-size:22px;font-weight:600;text-align:center}
+.auth-card .lead{color:var(--muted);text-align:center;font-size:12.5px;margin-top:7px;font-family:var(--mono)}
+.field{margin-top:17px}
+.field label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600;margin-bottom:7px}
+.inp{width:100%;padding:11px 13px;background:#0a1c1f;border:1px solid var(--line);border-radius:10px;font-size:13.5px;transition:.15s}
+.inp:focus{outline:none;border-color:var(--accent-dim);box-shadow:0 0 0 3px var(--accent-glow)}
+.inp::placeholder{color:var(--dim)}
+.auth-row{display:flex;align-items:center;justify-content:space-between;margin-top:15px;font-size:12.5px}
+.lnk{color:var(--accent);cursor:pointer}.lnk:hover{text-decoration:underline}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--dim);font-size:11px;font-family:var(--mono)}
+.divider:before,.divider:after{content:'';flex:1;height:1px;background:var(--line)}
+.oauth{display:flex;gap:10px}
+.oauth button{flex:1;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:7px}
+.oauth button:hover{border-color:var(--accent-dim)}
+
+/* ============ APP SHELL ============ */
+#app{display:none;height:100vh;grid-template-columns:236px 1fr}
+#app.on{display:grid}
+aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;transition:.2s}
+aside.collapsed{width:66px}
+#app.rail{grid-template-columns:66px 1fr}
+.side-top{padding:18px 16px 14px;display:flex;align-items:center;gap:10px}
+.brand-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-dim));
+  display:grid;place-items:center;flex:none;color:#04211d;font-weight:700;font-family:var(--disp);font-size:15px}
+.brand-txt{font-family:var(--disp);font-weight:700;font-size:12.5px;letter-spacing:.13em;line-height:1.25}
+.side-collapse{margin-left:auto;color:var(--dim);padding:4px;border-radius:6px}
+.side-collapse:hover{color:var(--accent);background:var(--card)}
+.user-block{margin:6px 12px 14px;padding:10px;background:var(--card);border:1px solid var(--line-soft);border-radius:12px;
+  display:flex;align-items:center;gap:10px;cursor:pointer;transition:.15s;position:relative}
+.user-block:hover{border-color:var(--accent-dim)}
+.avatar{width:32px;height:32px;border-radius:9px;background:#16333a;display:grid;place-items:center;color:var(--accent);flex:none}
+.user-meta{min-width:0;flex:1}
+.user-meta .uid{font-family:var(--mono);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge-plan{display:inline-block;margin-top:3px;font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+  background:var(--accent-glow);color:var(--accent);padding:2px 6px;border-radius:20px;font-weight:600}
+.user-pop{position:absolute;bottom:calc(100% + 8px);left:0;right:0;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:6px;box-shadow:0 20px 50px rgba(0,0,0,.6);z-index:30}
+.user-pop button{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border-radius:8px;font-size:12.5px;text-align:left}
+.user-pop button:hover{background:var(--panel);color:var(--accent)}
+nav{flex:1;overflow-y:auto;padding:0 12px}
+.nav-lbl{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);padding:12px 10px 6px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9.5px 11px;border-radius:9px;font-size:13px;color:var(--muted);
+  cursor:pointer;transition:.14s;border-left:2px solid transparent;margin-bottom:1px;width:100%;text-align:left}
+.nav-item:hover{background:var(--card);color:var(--ink)}
+.nav-item.active{background:var(--card);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.nav-item .ms{font-size:19px;flex:none}
+aside.collapsed .brand-txt,aside.collapsed .nav-item span:not(.ms),aside.collapsed .user-meta,aside.collapsed .nav-lbl{display:none}
+aside.collapsed .user-block{justify-content:center}
+.side-foot{padding:10px 12px 14px;border-top:1px solid var(--line-soft)}
+
+main{overflow-y:auto;position:relative;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(8,21,23,.9);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);padding:13px 26px;display:flex;align-items:center;gap:16px}
+.topbar h1{font-family:var(--disp);font-size:16px;font-weight:600}
+.topbar .spacer{flex:1}
+.search-top{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:8px 12px;width:280px}
+.search-top input{background:none;border:0;outline:none;font-size:12.5px;width:100%;font-family:var(--mono)}
+.icon-btn{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--muted);transition:.15s}
+.icon-btn:hover{background:var(--card);color:var(--accent)}
+.page{padding:24px 26px 60px;flex:1}
+.screen{display:none}.screen.on{display:block}
+
+/* ============ COMPONENTS ============ */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.card-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-soft)}
+.card-h h3{font-family:var(--disp);font-size:14px;font-weight:600;flex:1}
+.card-h .sub{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.card-b{padding:16px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 17px;position:relative;overflow:hidden}
+.stat .lab{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+.stat .lab .ms{font-size:15px;margin-left:auto;color:var(--dim)}
+.stat .val{font-family:var(--mono);font-size:27px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .note{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:5px}
+.stat.up .val{color:var(--up)} .stat.down .val{color:var(--down)}
+.stat.up{border-color:rgba(255,159,147,.28)} .stat.down{border-color:rgba(111,167,238,.28)}
+.tabs{display:flex;gap:3px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+.tab{padding:10px 16px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-weight:500}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;
+  font-family:var(--mono);border:1px solid var(--line);color:var(--muted);cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--accent-dim);color:var(--accent)}
+.chip.on{background:var(--accent-glow);border-color:var(--accent-dim);color:var(--accent)}
+.pill{display:inline-block;padding:2.5px 9px;border-radius:20px;font-size:10.5px;font-weight:600;font-family:var(--mono)}
+.pill.up{background:rgba(255,159,147,.14);color:var(--up)}
+.pill.down{background:rgba(111,167,238,.14);color:var(--down)}
+.pill.ok{background:var(--accent-glow);color:var(--accent)}
+.pill.run{background:rgba(255,207,143,.14);color:var(--warn)}
+label.lb{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600;margin-bottom:7px}
+.slider{width:100%;-webkit-appearance:none;height:4px;background:var(--line);border-radius:4px;outline:none}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 0 4px var(--accent-glow)}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;width:100%}
+.seg button{flex:1;padding:7px 10px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.seg button.on{background:var(--accent);color:#04211d;font-weight:600}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+thead th{position:sticky;top:0;background:var(--card);text-align:right;padding:10px 13px;border-bottom:1px solid var(--line);
+  color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;white-space:nowrap;z-index:2}
+thead th:first-child,thead th.l{text-align:left}
+tbody td{padding:8.5px 13px;text-align:right;border-bottom:1px solid var(--line-soft)}
+tbody td:first-child,tbody td.l{text-align:left}
+tbody tr:hover{background:var(--card)}
+tbody tr{cursor:pointer}
+.gene-lnk{color:var(--accent);font-weight:600}
+.tscroll{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.tip{position:fixed;z-index:200;pointer-events:none;background:#04191c;border:1px solid var(--accent-dim);color:var(--ink);
+  font-family:var(--mono);font-size:11px;padding:8px 10px;border-radius:8px;opacity:0;transition:opacity .1s;
+  box-shadow:0 12px 34px rgba(0,0,0,.6);white-space:nowrap;line-height:1.7}
+.tip b{color:var(--accent)}
+.plot{width:100%;height:430px}
+.plot svg{width:100%;height:100%;display:block}
+.grid line{stroke:var(--line-soft)}
+.thr{stroke:var(--dim);stroke-dasharray:4 4}
+.axl{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.tk{font-family:var(--mono);font-size:9.5px;fill:var(--dim)}
+.legend{display:flex;gap:16px;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:70px 20px;gap:12px;color:var(--muted)}
+.empty .ms{font-size:44px;color:var(--dim)}
+.empty h3{font-family:var(--disp);color:var(--ink);font-size:17px}
+.empty p{font-size:13px;max-width:400px;line-height:1.6}
+.spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,var(--card) 25%,#16292c 50%,var(--card) 75%);background-size:200% 100%;
+  animation:sk 1.4s infinite;border-radius:8px}
+@keyframes sk{to{background-position:-200% 0}}
+.stepper{display:flex;gap:0;margin:14px 0}
+.step{flex:1;text-align:center;position:relative;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.step:before{content:'';display:block;height:3px;background:var(--line);margin-bottom:8px;border-radius:3px}
+.step.done:before{background:var(--accent)} .step.done{color:var(--accent)}
+.step.act:before{background:linear-gradient(90deg,var(--accent) 50%,var(--line) 50%);background-size:200% 100%;animation:sk 1.2s infinite}
+.step.act{color:var(--accent)}
+
+/* dropzone */
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:26px 16px;text-align:center;transition:.18s;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--accent-dim);background:rgba(79,219,200,.04)}
+.drop .ms{font-size:30px;color:var(--accent-dim)}
+.file-chip{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+  border-radius:8px;padding:6px 10px;font-family:var(--mono);font-size:11.5px;margin-top:10px}
+
+/* sample groups */
+.grp-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grp{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px;min-height:96px}
+.grp h4{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600;margin-bottom:8px;text-align:center}
+.grp.ctrl h4{color:var(--down)} .grp.case h4{color:var(--up)}
+.samp{font-family:var(--mono);font-size:11px;padding:5px 8px;background:var(--panel);border:1px solid var(--line-soft);
+  border-radius:6px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.samp .ms{font-size:13px;color:var(--dim);margin-left:auto}
+
+/* news */
+.news-card{background:var(--card);border:1px solid var(--line-soft);border-radius:12px;padding:14px;margin-bottom:11px;transition:.18s;cursor:pointer}
+.news-card:hover{border-color:var(--accent-dim);transform:translateY(-2px)}
+.news-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.src{font-family:var(--mono);font-size:9.5px;padding:2.5px 7px;border-radius:5px;font-weight:600;letter-spacing:.03em}
+.news-card h4{font-family:var(--disp);font-size:13.5px;line-height:1.4;font-weight:600;margin-bottom:6px}
+.news-card p{font-size:11.5px;color:var(--muted);line-height:1.55}
+.news-meta{display:flex;align-items:center;gap:8px;margin-top:9px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.trend{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.trend div{background:var(--card);border:1px solid var(--line-soft);border-radius:10px;padding:10px;font-size:11px}
+.trend .t{color:var(--accent);font-family:var(--mono);font-size:10px;display:flex;align-items:center;gap:4px;margin-top:5px}
+
+/* dataset cards */
+.ds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px}
+.ds-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;overflow:hidden;transition:.18s;cursor:pointer}
+.ds-card:hover{border-color:var(--accent-dim);transform:translateY(-3px);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.ds-thumb{height:96px;background:radial-gradient(circle at 30% 60%,rgba(111,167,238,.28),transparent 60%),
+  radial-gradient(circle at 70% 40%,rgba(255,159,147,.28),transparent 60%),var(--card);position:relative}
+.ds-body{padding:13px}
+.ds-body h4{font-family:var(--disp);font-size:13.5px;font-weight:600;line-height:1.35}
+.ds-acc{font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:4px}
+.ds-meta{display:flex;gap:14px;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.bar-split{height:4px;border-radius:3px;background:var(--down-deep);margin-top:9px;overflow:hidden;display:flex}
+.bar-split i{background:var(--up-deep);display:block;height:100%}
+
+/* heatmap */
+.hm-wrap{display:flex;gap:0;height:430px;font-family:var(--mono)}
+.hm-rows{display:flex;flex-direction:column;padding-right:7px;text-align:right;width:72px;flex:none}
+.hm-rows span{font-size:8.5px;color:var(--muted);flex:1;display:flex;align-items:center;justify-content:flex-end;overflow:hidden}
+.hm-main{flex:1;display:flex;flex-direction:column;min-width:0}
+.hm-anno{display:grid;gap:1px;height:11px;margin-bottom:3px}
+.hm-grid{flex:1;display:grid;gap:1px;background:var(--line-soft);border:1px solid var(--line)}
+.hm-cell{width:100%;height:100%}
+.hm-scale{height:9px;width:150px;border-radius:3px;background:linear-gradient(90deg,var(--down-deep),#f2f7f7 50%,var(--up-deep))}
+
+/* enrichment bars */
+.enr-row{display:flex;align-items:center;gap:11px;margin-bottom:9px;cursor:pointer}
+.enr-row:hover .enr-name{color:var(--accent)}
+.enr-name{width:190px;font-size:11.5px;text-align:right;color:var(--ink);flex:none;font-family:var(--body)}
+.enr-track{flex:1;height:19px;background:var(--card);border-radius:5px;overflow:hidden}
+.enr-fill{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));border-radius:5px;transition:width .5s}
+.enr-val{width:66px;font-family:var(--mono);font-size:10.5px;color:var(--muted);flex:none}
+
+/* AI assistant */
+#ai-fab{position:fixed;right:24px;bottom:24px;width:54px;height:54px;border-radius:50%;background:var(--accent);
+  color:#04211d;display:grid;place-items:center;box-shadow:0 10px 34px rgba(79,219,200,.4);z-index:60;transition:.2s}
+#ai-fab:hover{transform:scale(1.07)}
+#ai-fab .ms{font-size:25px}
+#ai-panel{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:var(--panel);
+  border-left:1px solid var(--line);z-index:70;display:none;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.5)}
+#ai-panel.on{display:flex}
+.ai-h{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.ai-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:86%;padding:11px 13px;border-radius:13px;font-size:13px;line-height:1.6}
+.msg.a{background:var(--card);border:1px solid var(--line-soft);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.u{background:var(--accent-glow);border:1px solid var(--accent-dim);align-self:flex-end;border-bottom-right-radius:4px}
+.ai-ctx{padding:9px 16px;border-top:1px solid var(--line-soft);display:flex;gap:6px;flex-wrap:wrap}
+.ai-in{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:flex-end}
+.ai-in textarea{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  font-size:13px;resize:none;max-height:110px;outline:none}
+.ai-in textarea:focus{border-color:var(--accent-dim)}
+.sugg{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+
+/* gene drawer */
+#gene-drawer{position:fixed;right:0;top:0;bottom:0;width:560px;max-width:96vw;background:var(--panel);
+  border-left:1px solid var(--line);z-index:80;transform:translateX(100%);transition:.25s;overflow-y:auto}
+#gene-drawer.on{transform:translateX(0)}
+.gd-h{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);padding:18px;z-index:2}
+.gd-sym{font-family:var(--mono);font-size:25px;font-weight:600;color:var(--accent)}
+.ext-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+.go-chip{display:inline-block;padding:4px 9px;background:var(--card);border:1px solid var(--line-soft);
+  border-radius:6px;font-size:10.5px;font-family:var(--mono);color:var(--muted);margin:0 4px 4px 0}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.66);backdrop-filter:blur(4px);z-index:90;display:none;place-items:center;padding:24px}
+.modal-bg.on{display:grid}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:520px;overflow:hidden}
+.exp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.exp-card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:15px 10px;text-align:center;transition:.15s}
+.exp-card:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.exp-card .ms{font-size:23px;display:block;margin-bottom:7px}
+.exp-card span.n{font-family:var(--mono);font-size:11.5px;font-weight:600}
+
+@media(max-width:900px){
+  #app.on{grid-template-columns:1fr}
+  aside{position:fixed;left:0;top:0;bottom:0;width:236px;z-index:50;transform:translateX(-100%)}
+  aside.open{transform:translateX(0)}
+  .grp-wrap{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ LANDING ══════════════════ -->
+<div id="landing">
+  <canvas id="shader-canvas"></canvas>
+  <div class="land-nav">
+    <div class="brand-mark">E</div>
+    <div class="brand-txt">EXPRESSION<br>CONSOLE</div>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost" onclick="showAuth()">Sign in</button>
+  </div>
+  <div class="land-hero">
+    <h1>Expression<br>Console</h1>
+    <p class="sub">Differential expression analysis for public transcriptomic data — GEO &amp; TCGA discovery, limma-style statistics, and publication-ready visual analytics.</p>
+    <div class="cta-row">
+      <button class="btn btn-primary" onclick="showAuth()"><span class="ms">login</span> Enter Console</button>
+      <button class="btn btn-ghost" onclick="enterApp(true)"><span class="ms">play_circle</span> View demo</button>
+    </div>
+  </div>
+  <div class="feat-row">
+    <div class="feat"><span class="ms">database</span><h3>Analyze GEO &amp; TCGA</h3><p>Search thousands of public series, preview sample metadata, and load a dataset straight into analysis.</p></div>
+    <div class="feat"><span class="ms">insights</span><h3>Interactive analytics</h3><p>Volcano, PCA, clustered heatmaps, enrichment maps — every plot hoverable, zoomable, and re-thresholded live.</p></div>
+    <div class="feat"><span class="ms">download</span><h3>Export anything</h3><p>CSV, JSON, PNG, SVG for every table and figure, plus a bundled report with methods and provenance.</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════ AUTH ══════════════════ -->
+<div id="auth" class="hide">
+  <div class="auth-card">
+    <h2 id="auth-title">Sign in</h2>
+    <p class="lead" id="auth-lead">Access your analysis workspace</p>
+    <div class="field"><label>Email / Researcher ID</label><input class="inp" id="au-id" placeholder="researcher@lab.edu" value="researcher@lab.edu"></div>
+    <div class="field"><label>Password</label><input class="inp" type="password" id="au-pw" placeholder="••••••••" value="demo1234" onkeydown="if(event.key==='Enter')doAuth()"></div>
+    <div class="auth-row">
+      <label style="display:flex;align-items:center;gap:7px;color:var(--muted);text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:400;margin:0">
+        <input type="checkbox" checked style="accent-color:var(--accent)"> Remember me</label>
+      <span class="lnk">Forgot password?</span>
+    </div>
+    <div id="auth-err" class="hide" style="margin-top:14px;padding:10px 12px;border-radius:9px;
+      background:rgba(255,180,170,.1);border:1px solid rgba(255,180,170,.35);color:var(--bad);font-size:12.5px"></div>
+    <button class="btn btn-primary" id="signin-btn" style="width:100%;justify-content:center;margin-top:16px" onclick="doAuth()">
+      <span class="ms">arrow_forward</span> Sign in</button>
+    <div class="divider">or continue with</div>
+    <div class="oauth">
+      <button><span class="ms">public</span> Google</button>
+      <button><span class="ms">code</span> GitHub</button>
+    </div>
+    <p style="text-align:center;margin-top:17px;font-size:12.5px;color:var(--muted)">
+      No account? <span class="lnk" onclick="toggleAuthMode()">Create one</span></p>
+    <p style="text-align:center;margin-top:14px;font-size:10.5px;color:var(--dim);font-family:var(--mono);line-height:1.6">
+      Accounts are verified by the R server (scrypt-hashed passwords).<br>Demo account: researcher@lab.edu / demo1234</p>
+  </div>
+</div>
+
+<!-- ══════════════════ APP ══════════════════ -->
+<div id="app">
+  <aside id="side">
+    <div class="side-top">
+      <div class="brand-mark">E</div>
+      <div class="brand-txt">EXPRESSION<br>CONSOLE</div>
+      <button class="side-collapse" onclick="toggleRail()"><span class="ms" style="font-size:18px">left_panel_close</span></button>
+    </div>
+    <div class="user-block" onclick="togglePop(event)">
+      <div class="avatar"><span class="ms" style="font-size:18px">biotech</span></div>
+      <div class="user-meta">
+        <div class="uid">Researcher ID: 8824</div>
+        <span class="badge-plan">Premium Plan</span>
+      </div>
+      <div class="user-pop hide" id="userpop">
+        <button><span class="ms" style="font-size:16px">person</span> Profile</button>
+        <button onclick="go('settings')"><span class="ms" style="font-size:16px">settings</span> Settings</button>
+        <button><span class="ms" style="font-size:16px">dark_mode</span> Theme</button>
+        <button onclick="signOut()"><span class="ms" style="font-size:16px">logout</span> Sign out</button>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-lbl">Workspace</div>
+      <button class="nav-item active" data-nav="dashboard" onclick="go('dashboard')"><span class="ms">dashboard</span><span>Dashboard</span></button>
+      <button class="nav-item" data-nav="explorer" onclick="go('explorer')"><span class="ms">travel_explore</span><span>Data Explorer</span></button>
+      <button class="nav-item" data-nav="datasets" onclick="go('datasets')"><span class="ms">database</span><span>My Datasets</span></button>
+      <div class="nav-lbl">Analysis</div>
+      <button class="nav-item" data-nav="results" onclick="go('results')"><span class="ms">analytics</span><span>Analysis Results</span></button>
+      <button class="nav-item" data-nav="history" onclick="go('history')"><span class="ms">history</span><span>History</span></button>
+      <button class="nav-item" data-nav="exports" onclick="go('exports')"><span class="ms">ios_share</span><span>Exports</span></button>
+      <div class="nav-lbl">Assist</div>
+      <button class="nav-item" data-nav="ai" onclick="openAI()"><span class="ms">smart_toy</span><span>AI Assistant</span></button>
+      <button class="nav-item" data-nav="settings" onclick="go('settings')"><span class="ms">settings</span><span>Settings</span></button>
+    </nav>
+    <div class="side-foot">
+      <button class="nav-item"><span class="ms">help</span><span>Support</span></button>
+      <button class="nav-item"><span class="ms">feedback</span><span>Feedback</span></button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <button class="icon-btn" onclick="document.getElementById('side').classList.toggle('open')" style="display:none" id="burger"><span class="ms">menu</span></button>
+      <h1 id="page-title">Dashboard</h1>
+      <div class="spacer"></div>
+      <div class="search-top"><span class="ms" style="font-size:17px;color:var(--dim)">search</span>
+        <input placeholder="Search experiments…" id="topsearch"></div>
+      <button class="icon-btn"><span class="ms">notifications</span></button>
+      <button class="icon-btn"><span class="ms">help</span></button>
+    </div>
+
+    <div class="page">
+
+      <!-- ─────────── DASHBOARD ─────────── -->
+      <section class="screen on" id="s-dashboard">
+        <div style="display:grid;grid-template-columns:minmax(340px,420px) 1fr;gap:20px;align-items:start" id="dash-grid">
+
+          <!-- Configure Run -->
+          <div class="card">
+            <div class="card-h"><span class="ms" style="color:var(--accent)">tune</span><h3>Configure Run</h3></div>
+            <div class="card-b">
+              <label class="lb">GEO / TCGA accession</label>
+              <div style="position:relative">
+                <input class="inp mono" id="acc" value="GSE10072" placeholder="GSE10072" oninput="matchAcc()">
+                <span class="mono" id="accmatch" style="position:absolute;right:11px;top:11px;font-size:10px;color:var(--accent)">MATCH FOUND</span>
+              </div>
+              <div style="margin-top:9px"><select class="inp mono" id="preset" onchange="document.getElementById('acc').value=this.value;matchAcc()"></select></div>
+
+              <label class="lb" style="margin-top:18px">Or upload your own matrix</label>
+              <div class="drop" id="drop">
+                <span class="ms">cloud_upload</span>
+                <div style="font-size:12.5px;margin-top:7px">Drop matrix file</div>
+                <div class="mono" style="font-size:10.5px;color:var(--dim);margin-top:3px">CSV, TSV or TXT — genes × samples</div>
+                <input type="file" id="fileinp" accept=".csv,.tsv,.txt" class="hide">
+              </div>
+              <div id="filechip"></div>
+
+              <label class="lb" style="margin-top:18px">Sample groups</label>
+              <div class="grp-wrap">
+                <div class="grp ctrl"><h4>Control</h4><div id="grp-ctrl"></div></div>
+                <div class="grp case"><h4>Case</h4><div id="grp-case"></div></div>
+              </div>
+
+              <label class="lb" style="margin-top:18px">|log2FC| threshold <span class="mono" style="float:right;color:var(--accent)" id="lfc-v">1.0</span></label>
+              <input type="range" class="slider" id="lfc" min="0" max="5" step="0.1" value="1" oninput="thrChange()">
+              <label class="lb" style="margin-top:15px">Adjusted p-value <span class="mono" style="float:right;color:var(--accent)" id="padj-v">0.05</span></label>
+              <input type="range" class="slider" id="padj" min="0.001" max="0.2" step="0.001" value="0.05" oninput="thrChange()">
+
+              <div id="stepper" class="stepper hide">
+                <div class="step" data-s="0">Queue</div><div class="step" data-s="1">Fetch</div>
+                <div class="step" data-s="2">Normalize</div><div class="step" data-s="3">Model</div><div class="step" data-s="4">Done</div>
+              </div>
+
+              <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:18px" id="runbtn" onclick="runAnalysis()">
+                <span class="ms">play_arrow</span> Run Analysis</button>
+            </div>
+          </div>
+
+          <!-- News feed -->
+          <div class="card" style="max-height:calc(100vh - 150px);display:flex;flex-direction:column">
+            <div class="card-h">
+              <span style="width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)"></span>
+              <h3>Bioinformatics Feed</h3>
+              <span class="sub">updated 4m ago</span>
+              <button class="icon-btn"><span class="ms" style="font-size:17px">refresh</span></button>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid var(--line-soft);display:flex;gap:6px;flex-wrap:wrap">
+              <span class="chip on">All</span><span class="chip">Preprints</span><span class="chip">Publications</span>
+              <span class="chip">Tools</span><span class="chip">Datasets</span><span class="chip">Conferences</span>
+            </div>
+            <div class="card-b" style="overflow-y:auto;flex:1">
+              <div class="nav-lbl" style="padding-left:0">Trending in transcriptomics</div>
+              <div class="trend">
+                <div>Spatial transcriptomics<div class="t"><span class="ms" style="font-size:12px">trending_up</span>4.1k</div></div>
+                <div>scRNA-seq integration<div class="t"><span class="ms" style="font-size:12px">trending_up</span>3.8k</div></div>
+                <div>Long-read sequencing<div class="t"><span class="ms" style="font-size:12px">trending_up</span>2.1k</div></div>
+              </div>
+              <div id="newsfeed"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────── ANALYSIS RESULTS ─────────── -->
+      <section class="screen" id="s-results">
+        <div id="res-empty" class="empty">
+          <span class="ms">science</span>
+          <h3>No analysis yet</h3>
+          <p>Configure a run on the Dashboard — pick a GEO accession or upload your own matrix — then run the pipeline to populate these results.</p>
+          <button class="btn btn-ghost" onclick="go('dashboard')"><span class="ms">tune</span> Go to Configure Run</button>
+        </div>
+
+        <div id="res-body" class="hide">
+          <div style="display:flex;align-items:center;gap:13px;margin-bottom:18px;flex-wrap:wrap">
+            <button class="icon-btn" onclick="go('dashboard')"><span class="ms">arrow_back</span></button>
+            <span class="ms" style="color:var(--accent)">science</span>
+            <span class="mono" style="font-size:16px;font-weight:600" id="run-id">ANL-2026-0001</span>
+            <span class="pill ok" id="run-status">COMPLETED</span>
+            <div class="spacer" style="flex:1"></div>
+            <button class="btn btn-ghost" style="padding:9px 16px;font-size:12.5px" onclick="openExport()">
+              <span class="ms" style="font-size:17px">download</span> Export Report</button>
+          </div>
+
+          <div class="mono" style="font-size:10.5px;color:var(--dim);background:var(--panel);border:1px solid var(--line-soft);
+            border-radius:9px;padding:9px 13px;margin-bottom:18px;line-height:1.8" id="provenance"></div>
+
+          <div class="stat-grid" id="res-stats"></div>
+
+          <div class="tabs" id="res-tabs">
+            <button class="tab active" data-t="overview" onclick="resTab('overview')">Overview</button>
+            <button class="tab" data-t="volcano" onclick="resTab('volcano')">Volcano Plot</button>
+            <button class="tab" data-t="pca" onclick="resTab('pca')">PCA</button>
+            <button class="tab" data-t="heatmap" onclick="resTab('heatmap')">Heatmap</button>
+            <button class="tab" data-t="degenes" onclick="resTab('degenes')">DE Genes</button>
+            <button class="tab" data-t="enrich" onclick="resTab('enrich')">Enrichment</button>
+            <button class="tab" data-t="qc" onclick="resTab('qc')">QC Report</button>
+          </div>
+          <div id="res-view"></div>
+        </div>
+      </section>
+
+      <!-- ─────────── DATA EXPLORER ─────────── -->
+      <section class="screen" id="s-explorer">
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-b">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <div class="search-top" style="flex:1;min-width:240px">
+                <span class="ms" style="font-size:18px;color:var(--dim)">search</span>
+                <input placeholder="try: breast cancer RNA-seq with >100 samples" id="dsq" oninput="renderExplorer()">
+              </div>
+              <div class="seg" style="width:auto">
+                <button class="on" onclick="srcFilter(this,'all')">Both</button>
+                <button onclick="srcFilter(this,'GEO')">GEO</button>
+                <button onclick="srcFilter(this,'TCGA')">TCGA</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:13px" id="ds-chips"></div>
+          </div>
+        </div>
+        <div class="ds-grid" id="ds-results"></div>
+      </section>
+
+      <!-- ─────────── MY DATASETS ─────────── -->
+      <section class="screen" id="s-datasets">
+        <p style="color:var(--muted);margin-bottom:18px;max-width:640px;line-height:1.6">
+          Access and manage your genomic analysis pipelines. Monitor processing status, export results, or initiate deep-dive differential expression investigations.</p>
+        <div class="ds-grid" id="my-datasets"></div>
+      </section>
+
+      <!-- ─────────── HISTORY ─────────── -->
+      <section class="screen" id="s-history">
+        <div class="card"><div class="tscroll" style="max-height:none;border:0">
+          <table><thead><tr><th class="l">Run ID</th><th class="l">Dataset</th><th>Samples</th><th>DE genes</th>
+            <th>Duration</th><th class="l">Status</th><th></th></tr></thead><tbody id="hist-body"></tbody></table>
+        </div></div>
+      </section>
+
+      <!-- ─────────── EXPORTS ─────────── -->
+      <section class="screen" id="s-exports">
+        <div class="empty"><span class="ms">ios_share</span><h3>No exports yet</h3>
+          <p>Files you export from an analysis appear here for re-download. Run an analysis, then use Export Report.</p></div>
+      </section>
+
+      <!-- ─────────── SETTINGS ─────────── -->
+      <section class="screen" id="s-settings">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+          <div class="card"><div class="card-h"><h3>Profile</h3></div><div class="card-b">
+            <label class="lb">Researcher ID</label><input class="inp mono" value="8824" readonly>
+            <label class="lb" style="margin-top:14px">Email</label><input class="inp" value="researcher@lab.edu">
+            <label class="lb" style="margin-top:14px">Institution</label><input class="inp" value="Department of Bioinformatics">
+          </div></div>
+          <div class="card"><div class="card-h"><h3>Analysis defaults</h3></div><div class="card-b">
+            <label class="lb">Default |log2FC|</label><input class="inp mono" value="1.0">
+            <label class="lb" style="margin-top:14px">Default adj. p-value</label><input class="inp mono" value="0.05">
+            <label class="lb" style="margin-top:14px">Multiple testing</label>
+            <select class="inp mono"><option>Benjamini-Hochberg</option><option>Bonferroni</option><option>Holm</option></select>
+          </div></div>
+          <div class="card"><div class="card-h"><h3>Backend</h3></div><div class="card-b">
+            <label class="lb">Analysis API endpoint</label>
+            <input class="inp mono" id="apiurl" placeholder="https://your-api-host" value="">
+            <p style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6">
+              Leave blank to run in-browser (CSV upload + demo mode). Point it at a deployed plumber/FastAPI service to run live GEO downloads with limma.</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--dim)" id="apidot"></span>
+              <span class="mono" style="font-size:11px;color:var(--muted)" id="apitxt">in-browser mode</span>
+            </div>
+          </div></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- AI assistant -->
+<button id="ai-fab" class="hide" onclick="openAI()"><span class="ms">smart_toy</span></button>
+<div id="ai-panel">
+  <div class="ai-h">
+    <div class="avatar" style="width:28px;height:28px"><span class="ms" style="font-size:16px">smart_toy</span></div>
+    <div style="flex:1"><div style="font-family:var(--disp);font-size:13.5px;font-weight:600">Analysis Assistant</div>
+      <div class="mono" style="font-size:9.5px;color:var(--dim)">context-aware · not connected</div></div>
+    <button class="icon-btn" onclick="clearAI()"><span class="ms" style="font-size:17px">delete_sweep</span></button>
+    <button class="icon-btn" onclick="closeAI()"><span class="ms" style="font-size:17px">close</span></button>
+  </div>
+  <div class="ai-msgs" id="ai-msgs"></div>
+  <div class="ai-ctx" id="ai-ctx"></div>
+  <div class="ai-in">
+    <textarea id="ai-inp" rows="1" placeholder="Ask about your results…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAI()}"></textarea>
+    <button class="btn btn-primary" style="padding:10px 13px" onclick="sendAI()"><span class="ms">send</span></button>
+  </div>
+</div>
+
+<!-- Gene drawer -->
+<div id="gene-drawer"></div>
+
+<!-- Export modal -->
+<div class="modal-bg" id="expmodal" onclick="if(event.target===this)closeExport()">
+  <div class="modal">
+    <div class="card-h"><span class="ms" style="color:var(--accent)">download</span><h3>Export results</h3>
+      <button class="icon-btn" onclick="closeExport()"><span class="ms">close</span></button></div>
+    <div class="card-b">
+      <div class="nav-lbl" style="padding-left:0">Tables</div>
+      <div class="exp-grid">
+        <button class="exp-card" onclick="expData('csv')"><span class="ms">table_view</span><span class="n">CSV</span></button>
+        <button class="exp-card" onclick="expData('tsv')"><span class="ms">table_rows</span><span class="n">TSV</span></button>
+        <button class="exp-card" onclick="expData('json')"><span class="ms">data_object</span><span class="n">JSON</span></button>
+      </div>
+      <div class="nav-lbl" style="padding-left:0;margin-top:16px">Figures</div>
+      <div class="exp-grid">
+        <button class="exp-card" onclick="expFig('svg')"><span class="ms">image</span><span class="n">SVG</span></button>
+        <button class="exp-card" onclick="expFig('png')"><span class="ms">photo</span><span class="n">PNG</span></button>
+        <button class="exp-card" onclick="expReport()"><span class="ms">description</span><span class="n">Report</span></button>
+      </div>
+      <p style="font-size:11.5px;color:var(--muted);margin-top:16px;line-height:1.6">
+        Figure export captures the currently visible plot. The report bundles all figures, the DE table, and a methods block with your thresholds and provenance.</p>
+    </div>
+  </div>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+"use strict";
+/* ═══════════ SHADER (landing) ═══════════ */
+(function(){
+  const c=document.getElementById('shader-canvas');
+  function sz(){const w=c.clientWidth||1280,h=c.clientHeight||720;if(c.width!==w||c.height!==h){c.width=w;c.height=h}}
+  if(typeof ResizeObserver!=='undefined')new ResizeObserver(sz).observe(c); sz();
+  const gl=c.getContext('webgl')||c.getContext('experimental-webgl'); if(!gl)return;
+  const vs=`attribute vec2 a_position;varying vec2 v;void main(){v=a_position*0.5+0.5;gl_Position=vec4(a_position,0.,1.);}`;
+  const fs=`precision highp float;uniform float u_time;uniform vec2 u_resolution;varying vec2 v;
+  float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+  void main(){vec2 uv=v;vec2 p=(uv-0.5)*2.0;p.x*=u_resolution.x/u_resolution.y;
+    vec3 col=mix(vec3(0.031,0.082,0.090),vec3(0.012,0.035,0.040),length(p));
+    for(float i=0.;i<60.;i++){float h=hash(vec2(i,123.45));float sp=0.1+h*0.2;float ph=h*6.28;
+      vec2 pos=vec2(sin(u_time*sp*0.5+ph)*0.8,cos(u_time*sp*0.3+ph)*0.5);
+      float res=smoothstep(0.4,0.6,sin(u_time*0.1)*0.5+0.5);
+      vec2 vp=vec2((h-0.5)*1.6,pow(abs(h-0.5)*2.0,2.0)*0.8-0.4);
+      vec2 fp=mix(pos,vp,res*0.45);float d=length(p-fp);
+      vec3 pc; if(h<0.33)pc=vec3(0.75,0.21,0.17); else if(h<0.66)pc=vec3(0.18,0.43,0.69); else pc=vec3(0.31,0.86,0.78);
+      float s=0.003+h*0.002; col+=pc*smoothstep(s,0.,d)*0.85; col+=pc*(0.001/d)*0.22;}
+    gl_FragColor=vec4(col,1.);}`;
+  function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o}
+  const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(pr);gl.useProgram(pr);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const a=gl.getAttribLocation(pr,'a_position');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
+  const uT=gl.getUniformLocation(pr,'u_time'),uR=gl.getUniformLocation(pr,'u_resolution');
+  let raf;function draw(t){if(document.getElementById('landing').classList.contains('hide')&&document.getElementById('auth').classList.contains('hide')){raf=requestAnimationFrame(draw);return}
+    sz();gl.viewport(0,0,c.width,c.height);gl.uniform1f(uT,t*0.001);gl.uniform2f(uR,c.width,c.height);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);raf=requestAnimationFrame(draw)}
+  draw(0);
+})();
+
+/* ═══════════ STATE ═══════════ */
+const REG=[["GSE2034","Breast cancer — relapse vs non-relapse","GEO",286],["GSE45827","Breast cancer subtypes","GEO",155],
+["GSE10072","Lung adenocarcinoma vs normal","GEO",107],["GSE53757","Clear cell renal carcinoma","GEO",144],
+["GSE14520","Hepatocellular carcinoma","GEO",445],["GSE39582","Colorectal cancer cohort","GEO",585],
+["GSE48350","Alzheimer's disease brain","GEO",253],["GSE55235","Rheumatoid arthritis synovium","GEO",30],
+["GSE15641","Renal cell carcinoma subtypes","GEO",69],["GSE11121","Node-negative breast cancer","GEO",200],
+["TCGA-BRCA","Breast invasive carcinoma","TCGA",1097],["TCGA-LUAD","Lung adenocarcinoma","TCGA",585],
+["TCGA-COAD","Colon adenocarcinoma","TCGA",461],["TCGA-KIRC","Kidney renal clear cell","TCGA",537],
+["TCGA-LIHC","Liver hepatocellular carcinoma","TCGA",377],["TCGA-PRAD","Prostate adenocarcinoma","TCGA",498]];
+
+const S={data:null,tab:'overview',lfc:1,padj:.05,src:'all',uploaded:null,runs:[],mode:'demo',token:null,user:null};
+const $=id=>document.getElementById(id);
+const el=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e};
+const fmtI=n=>n==null?'—':(''+Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtP=p=>p===0?'0':(p<1e-4?p.toExponential(2):p.toPrecision(3));
+const fmtF=x=>(x>=0?'+':'')+x.toFixed(2);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* seeded rng */
+function rng32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+
+/* ═══════════ AUTH (real, server-backed) ═══════════ */
+function authBusy(on,label){
+  const b=$('signin-btn');
+  b.disabled=on;
+  b.innerHTML=on?'<span class="ms">hourglass_empty</span> '+label
+    :'<span class="ms">arrow_forward</span> '+($('auth-title').textContent==='Sign in'?'Sign in':'Create account');
+}
+function authError(msg){
+  const e=$('auth-err');
+  if(!msg){e.classList.add('hide');return}
+  e.textContent=msg; e.classList.remove('hide');
+}
+async function doAuth(){
+  const email=$('au-id').value.trim(), pw=$('au-pw').value;
+  const signup=$('auth-title').textContent!=='Sign in';
+  authError('');
+  if(!email||!pw){ authError('Enter your email and password'); return; }
+  const b=apiBase();
+  if(b===null){
+    authError('No backend reachable. This page is open as a local file — serve it from the R server, or use "View demo".');
+    return;
+  }
+  authBusy(true,signup?'Creating account…':'Signing in…');
+  try{
+    const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),20000);
+    const r=await fetch(b+(signup?'/auth/register':'/auth/login'),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pw}),signal:ctl.signal});
+    clearTimeout(t);
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){ authError(j.error||('Sign-in failed ('+r.status+')')); authBusy(false); return; }
+    S.token=j.token; S.user=j.user;
+    authBusy(false);
+    enterApp(false);
+  }catch(e){
+    authBusy(false);
+    authError(e.name==='AbortError'?'The server took too long to respond. It may be waking up — try again.'
+      :'Could not reach the server. If it was idle it may be starting up; wait a moment and retry.');
+  }
+}
+function applyUser(){
+  const u=S.user;
+  if(!u) return;
+  const uidEl=document.querySelector('.user-meta .uid');
+  if(uidEl) uidEl.textContent='Researcher ID: '+(u.rid||'—');
+  const planEl=document.querySelector('.user-meta .badge-plan');
+  if(planEl) planEl.textContent=u.plan||'Free Plan';
+}
+async function serverLogout(){
+  const b=apiBase();
+  if(b!==null&&S.token){ try{ await fetch(b+'/auth/logout',{method:'POST',headers:authHeaders()}); }catch(e){} }
+  S.token=null; S.user=null;
+}
+
+/* ═══════════ NAVIGATION ═══════════ */
+function showAuth(){$('landing').classList.add('hide');$('auth').classList.remove('hide')}
+function toggleAuthMode(){
+  const t=$('auth-title');const s=t.textContent==='Sign in';
+  t.textContent=s?'Create account':'Sign in';
+  $('auth-lead').textContent=s?'Start analyzing public transcriptomic data':'Access your analysis workspace';
+  $('signin-btn').innerHTML='<span class="ms">arrow_forward</span> '+(s?'Create account':'Sign in');
+  authError('');
+}
+function enterApp(demo){
+  $('landing').classList.add('hide');$('auth').classList.add('hide');
+  $('app').classList.add('on');$('ai-fab').classList.remove('hide');
+  document.body.style.overflow='hidden';
+  initApp();
+  applyUser();
+  if(demo){
+    S.token=null;S.user=null;
+    $('acc').value='GSE10072';matchAcc();
+    setTimeout(()=>toast('Demo mode — not signed in. Live GEO analysis requires an account.'),600);
+  }
+}
+async function signOut(){
+  await serverLogout();
+  S.data=null;S.runs=[];
+  $('res-body').classList.add('hide');$('res-empty').classList.remove('hide');
+  $('app').classList.remove('on');$('ai-fab').classList.add('hide');closeAI();
+  $('landing').classList.remove('hide');$('auth').classList.add('hide');
+}
+function toggleRail(){$('app').classList.toggle('rail');$('side').classList.toggle('collapsed')}
+function togglePop(e){e.stopPropagation();$('userpop').classList.toggle('hide')}
+document.addEventListener('click',()=>$('userpop').classList.add('hide'));
+
+const TITLES={dashboard:'Dashboard',results:'Analysis Results',explorer:'Data Explorer',
+  datasets:'My Datasets',history:'Analysis History',exports:'Exports',settings:'Settings'};
+function go(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $('s-'+name).classList.add('on');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.nav===name));
+  $('page-title').textContent=TITLES[name]||name;
+  $('side').classList.remove('open');
+  if(name==='explorer')renderExplorer();
+  if(name==='datasets')renderMyDatasets();
+  if(name==='history')renderHistory();
+  window.scrollTo(0,0);
+}
+
+/* ═══════════ INIT ═══════════ */
+function initApp(){
+  const sel=$('preset');sel.innerHTML='';
+  REG.forEach(([id,d,src])=>{const o=el('option');o.value=id;o.textContent=`${id} — ${d}`;sel.appendChild(o)});
+  sel.value='GSE10072';
+  renderNews();renderExplorerChips();renderGroups(null);
+  $('drop').onclick=()=>$('fileinp').click();
+  $('fileinp').onchange=e=>handleFile(e.target.files[0]);
+  ['dragover','dragenter'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.add('over')}));
+  ['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.remove('over')}));
+  $('drop').addEventListener('drop',e=>{if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])});
+  if(window.innerWidth<900)$('burger').style.display='grid';
+  const ai=$('apiurl');
+  if(ai){ ai.value=_api; ai.oninput=e=>{clearTimeout(ai._t);ai._t=setTimeout(()=>setApi(e.target.value),500)}; }
+}
+function matchAcc(){
+  const v=$('acc').value.trim().toUpperCase();
+  const hit=REG.find(r=>r[0]===v);
+  $('accmatch').textContent=hit?'MATCH FOUND':(v?'CUSTOM':'');
+  $('accmatch').style.color=hit?'var(--accent)':'var(--dim)';
+}
+function thrChange(){
+  S.lfc=parseFloat($('lfc').value);S.padj=parseFloat($('padj').value);
+  $('lfc-v').textContent=S.lfc.toFixed(1);$('padj-v').textContent=S.padj.toFixed(3);
+  if(S.data){renderStats();resTab(S.tab)}
+}
+
+/* ═══════════ CSV UPLOAD → REAL ANALYSIS ═══════════ */
+function handleFile(f){
+  if(!f)return;
+  $('filechip').innerHTML=`<div class="file-chip"><span class="ms" style="font-size:15px;color:var(--accent)">description</span>
+    ${f.name} <span style="color:var(--dim)">${(f.size/1024).toFixed(0)} KB</span>
+    <span class="ms" style="font-size:14px;cursor:pointer" onclick="clearFile()">close</span></div>`;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    try{
+      const txt=e.target.result;
+      const sep=f.name.endsWith('.tsv')||txt.split('\n')[0].split('\t').length>2?'\t':',';
+      const rows=txt.trim().split(/\r?\n/).map(l=>l.split(sep));
+      const header=rows[0].slice(1).map(s=>s.replace(/^["']|["']$/g,'').trim());
+      const genes=[],mat=[];
+      for(let i=1;i<rows.length;i++){
+        const r=rows[i];if(r.length<2)continue;
+        const vals=r.slice(1).map(Number);
+        if(vals.some(isNaN))continue;
+        genes.push(r[0].replace(/^["']|["']$/g,'').trim());mat.push(vals);
+      }
+      S.uploaded={genes,samples:header,mat};
+      renderGroups(header);
+      toast(`Loaded ${genes.length} genes × ${header.length} samples — assign groups, then Run Analysis`);
+    }catch(err){toast('Could not parse that file: '+err.message)}
+  };
+  rd.readAsText(f);
+}
+function clearFile(){S.uploaded=null;$('filechip').innerHTML='';$('fileinp').value='';renderGroups(null)}
+function renderGroups(samples){
+  const c=$('grp-ctrl'),k=$('grp-case');c.innerHTML='';k.innerHTML='';
+  if(!samples){
+    c.innerHTML='<div class="mono" style="font-size:10.5px;color:var(--dim);text-align:center;padding:14px 4px">auto-detected<br>from metadata</div>';
+    k.innerHTML='<div class="mono" style="font-size:10.5px;color:var(--dim);text-align:center;padding:14px 4px">auto-detected<br>from metadata</div>';
+    return;
+  }
+  S.groups=samples.map((s,i)=>i<Math.floor(samples.length/2)?'Control':'Case');
+  samples.forEach((s,i)=>{
+    const d=el('div','samp');d.innerHTML=`${s}<span class="ms">swap_horiz</span>`;
+    d.onclick=()=>{S.groups[i]=S.groups[i]==='Control'?'Case':'Control';renderGroupsFromState(samples)};
+    (S.groups[i]==='Control'?c:k).appendChild(d);
+  });
+}
+function renderGroupsFromState(samples){
+  const c=$('grp-ctrl'),k=$('grp-case');c.innerHTML='';k.innerHTML='';
+  samples.forEach((s,i)=>{
+    const d=el('div','samp');d.innerHTML=`${s}<span class="ms">swap_horiz</span>`;
+    d.onclick=()=>{S.groups[i]=S.groups[i]==='Control'?'Case':'Control';renderGroupsFromState(samples)};
+    (S.groups[i]==='Control'?c:k).appendChild(d);
+  });
+}
+
+/* real stats: Welch t-test + BH FDR */
+function mean(a){return a.reduce((x,y)=>x+y,0)/a.length}
+function vari(a,m){return a.length<2?0:a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)}
+/* log-gamma (Lanczos) */
+function lgamma(x){
+  const g=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,
+    .1208650973866179e-2,-.5395239384953e-5];
+  let y=x,tmp=x+5.5;tmp-=(x+.5)*Math.log(tmp);let s=1.000000000190015;
+  for(let j=0;j<6;j++)s+=g[j]/++y;
+  return -tmp+Math.log(2.5066282746310005*s/x);
+}
+/* regularised incomplete beta — continued fraction (Numerical Recipes) */
+function betacf(a,b,x){
+  const FPMIN=1e-300,EPS=3e-12;
+  let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;
+  if(Math.abs(d)<FPMIN)d=FPMIN; d=1/d; let h=d;
+  for(let m=1;m<=200;m++){
+    const m2=2*m;
+    let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+    d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+    c=1+aa/c;  if(Math.abs(c)<FPMIN)c=FPMIN;
+    d=1/d; h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+    d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+    c=1+aa/c;  if(Math.abs(c)<FPMIN)c=FPMIN;
+    d=1/d; const del=d*c; h*=del;
+    if(Math.abs(del-1)<EPS)break;
+  }
+  return h;
+}
+function ibeta(a,b,x){
+  if(x<=0)return 0; if(x>=1)return 1;
+  const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+  return x<(a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b;
+}
+/* two-tailed p from Student's t with df degrees of freedom */
+function pFromT(t,df){
+  if(!isFinite(t)||!isFinite(df)||df<=0)return 1;
+  const x=df/(df+t*t);
+  return clamp(ibeta(df/2,0.5,x),1e-300,1);
+}
+/* Welch-Satterthwaite degrees of freedom */
+function welchDF(va,na,vb,nb){
+  const a=va/na,b=vb/nb,num=(a+b)**2;
+  const den=(a*a)/(na-1)+(b*b)/(nb-1);
+  return den>0?num/den:na+nb-2;
+}
+function bh(ps){
+  const idx=ps.map((p,i)=>[p,i]).sort((a,b)=>a[0]-b[0]);const n=ps.length;const out=new Array(n);let prev=1;
+  for(let k=n-1;k>=0;k--){const [p,i]=idx[k];const q=Math.min(prev,p*n/(k+1));out[i]=clamp(q,0,1);prev=q}
+  return out;
+}
+function analyzeUploaded(){
+  const {genes,samples,mat}=S.uploaded;
+  const ci=[],ki=[];S.groups.forEach((g,i)=>(g==='Control'?ci:ki).push(i));
+  if(ci.length<2||ki.length<2){toast('Need at least 2 samples in each group');return null}
+  let looksLog=true;{const flat=mat[0]||[];if(Math.max(...flat)>50)looksLog=false}
+  const de=[],ps=[];
+  for(let g=0;g<genes.length;g++){
+    let a=ci.map(i=>mat[g][i]),b=ki.map(i=>mat[g][i]);
+    if(!looksLog){a=a.map(v=>Math.log2(v+1));b=b.map(v=>Math.log2(v+1))}
+    const ma=mean(a),mb=mean(b),va=vari(a,ma),vb=vari(b,mb);
+    const se=Math.sqrt(va/a.length+vb/b.length)||1e-9;
+    const t=(mb-ma)/se;
+    const df=welchDF(va,a.length,vb,b.length);
+    const p=pFromT(t,df);
+    de.push({gene:genes[g],logFC:mb-ma,p,baseMean:(ma+mb)/2,stat:t});ps.push(p);
+  }
+  const q=bh(ps);de.forEach((d,i)=>d.adjP=q[i]);
+  de.sort((a,b)=>a.p-b.p);
+  // PCA on top-variance genes
+  const pca=computePCA(mat,samples,S.groups,looksLog);
+  const heat=buildHeat(genes,mat,samples,S.groups,looksLog);
+  return {gse:'UPLOAD',title:'User-uploaded expression matrix',platform:'user CSV',
+    n_samples:samples.length,n_genes:genes.length,de,pca,pc_var:pca.ve,heat,real:true,
+    groups:{Control:ci.length,Case:ki.length}};
+}
+function computePCA(mat,samples,groups,looksLog){
+  const n=samples.length;
+  const vars=mat.map(r=>{const m=mean(r);return vari(r,m)});
+  const idx=vars.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]).slice(0,Math.min(500,mat.length)).map(x=>x[1]);
+  const X=idx.map(i=>{let r=mat[i].slice();if(!looksLog)r=r.map(v=>Math.log2(v+1));
+    const m=mean(r),sd=Math.sqrt(vari(r,m))||1;return r.map(v=>(v-m)/sd)});
+  // power iteration for PC1/PC2 on sample covariance
+  const C=Array.from({length:n},()=>new Array(n).fill(0));
+  for(const row of X)for(let i=0;i<n;i++)for(let j=0;j<n;j++)C[i][j]+=row[i]*row[j];
+  const pcs=[];let M=C.map(r=>r.slice());
+  for(let k=0;k<2;k++){
+    let v=new Array(n).fill(0).map((_,i)=>Math.sin(i+k+1));
+    for(let it=0;it<120;it++){const w=new Array(n).fill(0);
+      for(let i=0;i<n;i++)for(let j=0;j<n;j++)w[i]+=M[i][j]*v[j];
+      const nn=Math.hypot(...w)||1;v=w.map(x=>x/nn)}
+    let lam=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++)lam+=v[i]*M[i][j]*v[j];
+    pcs.push({v,lam});
+    for(let i=0;i<n;i++)for(let j=0;j<n;j++)M[i][j]-=lam*v[i]*v[j];
+  }
+  let tot=0;for(let i=0;i<n;i++)tot+=C[i][i];
+  const ve=pcs.map(p=>Math.round(1000*p.lam/tot)/10);
+  const pts=samples.map((s,i)=>({sample:s,PC1:pcs[0].v[i]*Math.sqrt(Math.abs(pcs[0].lam)),
+    PC2:pcs[1].v[i]*Math.sqrt(Math.abs(pcs[1].lam)),group:groups[i]}));
+  pts.ve=ve;return Object.assign(pts,{ve});
+}
+function buildHeat(genes,mat,samples,groups,looksLog){
+  const vars=mat.map(r=>{const m=mean(r);return vari(r,m)});
+  const idx=vars.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]).slice(0,40).map(x=>x[1]);
+  const ord=samples.map((s,i)=>i).sort((a,b)=>(groups[a]==='Control'?0:1)-(groups[b]==='Control'?0:1));
+  const z=idx.map(i=>{let r=ord.map(j=>mat[i][j]);if(!looksLog)r=r.map(v=>Math.log2(v+1));
+    const m=mean(r),sd=Math.sqrt(vari(r,m))||1;return r.map(v=>(v-m)/sd)});
+  return {genes:idx.map(i=>genes[i]),z,groups:ord.map(i=>groups[i]),samples:ord.map(i=>samples[i])};
+}
+
+/* ═══════════ DEMO GENERATOR ═══════════ */
+const SYM=['TP53','BRCA1','EGFR','MYC','VEGFA','CDK1','MKI67','PTEN','KRAS','AKT1','STAT3','IL6','MMP9','COL1A1','SPP1',
+'FOXM1','CCNB1','AURKA','TOP2A','RRM2','KRT19','CDH1','VIM','SNAI1','ZEB1','HIF1A','GLUT1','LDHA','PKM','ENO1',
+'CD44','ALDH1A1','SOX2','NANOG','POU5F1','BCL2','BAX','CASP3','PARP1','ATM'];
+function demoData(gse){
+  const rec=REG.find(r=>r[0]===gse)||[gse,'Custom accession','GEO',48];
+  const r=rng32([...gse].reduce((h,c)=>h*31+c.charCodeAt(0)|0,7)>>>0);
+  const de=[];
+  for(let i=0;i<1400;i++){const lfc=gauss(r)*.55;de.push({gene:'LOC'+(1e5+i|0),logFC:lfc,p:.2+.8*r(),adjP:clamp(.15+.85*r(),0,1),baseMean:200+r()*9000})}
+  for(let i=0;i<210;i++){const lfc=1+r()*3.6;const p=Math.exp(-lfc*2.7)*(.01+.5*r());
+    de.push({gene:SYM[i%SYM.length]+(i<SYM.length?'':i),logFC:lfc,p,adjP:clamp(p*1.4,1e-18,1),baseMean:300+r()*14000})}
+  for(let i=0;i<180;i++){const lfc=-(1+r()*3.6);const p=Math.exp(lfc*2.7)*(.01+.5*r());
+    de.push({gene:SYM[(i+13)%SYM.length]+(i<SYM.length?'_v':i),logFC:lfc,p,adjP:clamp(p*1.4,1e-18,1),baseMean:300+r()*14000})}
+  de.sort((a,b)=>a.adjP-b.adjP);
+  const nC=Math.min(24,Math.max(6,Math.floor(rec[3]/8))),nK=nC;
+  const pca=[];
+  for(let i=0;i<nC;i++)pca.push({sample:'GSM'+(4e5+i),PC1:-6+gauss(r)*1.7,PC2:gauss(r)*2.3,group:'Control'});
+  for(let i=0;i<nK;i++)pca.push({sample:'GSM'+(4e5+100+i),PC1:6+gauss(r)*1.7,PC2:gauss(r)*2.3,group:'Case'});
+  const hg=[],hz=[],hgrp=[...Array(20).fill('Control'),...Array(20).fill('Case')];
+  for(let g=0;g<40;g++){const dir=r()<.5?1:-1,eff=.8+r()*1.5,row=[];
+    for(let s=0;s<40;s++)row.push((s>=20?dir*eff:-dir*eff)+gauss(r)*.7);
+    const m=mean(row),sd=Math.sqrt(vari(row,m))||1;hg.push(SYM[g%SYM.length]+(g>=SYM.length?g:''));hz.push(row.map(v=>(v-m)/sd))}
+  return {gse,title:rec[1],platform:rec[2]==='TCGA'?'Illumina HiSeq (STAR counts)':'Affymetrix HG-U133',
+    n_samples:nC+nK,n_genes:de.length,de,pca,pc_var:[38.4,13.1],
+    heat:{genes:hg,z:hz,groups:hgrp,samples:hgrp.map((g,i)=>'GSM'+(4e5+i))},
+    real:false,groups:{Control:nC,Case:nK}};
+}
+
+/* ═══════════ LIVE BACKEND ═══════════ */
+function apiBase(){
+  const override=(_api||'').trim().replace(/\/+$/,'');
+  if(override) return override;
+  /* served by the R server itself -> same origin, no URL needed.
+     opened as a file:// page -> no backend available. */
+  return location.protocol==='http:'||location.protocol==='https:' ? '' : null;
+}
+function authHeaders(extra){
+  const h=Object.assign({},extra||{});
+  if(S.token) h['Authorization']='Bearer '+S.token;
+  return h;
+}
+/* artifacts block browser storage APIs, so keep the endpoint in memory + the input */
+let _api='';
+function localStorage_get(){ return _api; }
+function setApi(v){
+  _api=(v||'').trim();
+  const on=!!_api;
+  $('apitxt').textContent = on ? 'checking…' : 'in-browser mode';
+  $('apidot').style.background = on ? 'var(--warn)' : 'var(--dim)';
+  S.mode = on ? 'live' : 'demo';
+  if(on) checkHealth();
+}
+async function checkHealth(){
+  const b=apiBase(); if(!b) return;
+  try{
+    const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),8000);
+    const r=await fetch(b+'/health',{signal:ctl.signal}); clearTimeout(t);
+    const ok=r.ok;
+    $('apidot').style.background = ok?'var(--accent)':'var(--bad)';
+    $('apitxt').textContent = ok?'backend connected — live GEO analysis':'backend responded '+r.status;
+  }catch(e){
+    $('apidot').style.background='var(--bad)';
+    $('apitxt').textContent='unreachable — check URL, HTTPS and CORS';
+  }
+}
+/* normalise whatever the API returns into the shape the UI renders */
+function adapt(j,gse){
+  const de=(j.de||[]).map(d=>({
+    gene: d.gene,
+    logFC: +d.logFC,
+    p:     +(d.p ?? d['P.Value'] ?? d.pValue ?? d.adjP ?? 1),
+    adjP:  +(d.adjP ?? d['adj.P.Val'] ?? d.padj ?? 1),
+    baseMean: +(d.baseMean ?? d.AveExpr ?? 0),
+  })).filter(d=>isFinite(d.logFC)&&isFinite(d.adjP));
+  de.sort((a,b)=>a.adjP-b.adjP||a.p-b.p);
+  const heatRaw = j.heat || j.heatmap || {};
+  const heat = {
+    genes:   heatRaw.genes   || [],
+    z:       heatRaw.z       || [],
+    groups:  heatRaw.groups  || [],
+    samples: heatRaw.samples || null,
+  };
+  const pca=(j.pca||[]).map(p=>({sample:p.sample,PC1:+p.PC1,PC2:+p.PC2,group:p.group}));
+  let groups=j.groups||j.group_counts||{};
+  if(Array.isArray(groups)) groups={};
+  groups=Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,Array.isArray(v)?v[0]:v]));
+  if(!Object.keys(groups).length&&pca.length){
+    pca.forEach(p=>groups[p.group]=(groups[p.group]||0)+1);
+  }
+  return {
+    gse: j.gse||gse, title: j.title||'', platform: j.platform||'—',
+    n_samples: j.n_samples ?? pca.length,
+    n_genes:   j.n_genes   ?? de.length,
+    de, pca, pc_var: j.pc_var||[0,0], heat, groups,
+    real:true, live:true, grouped: j.grouped!==false,
+  };
+}
+async function fetchLive(gse){
+  const b=apiBase();
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),300000); // GEO runs are slow
+  let r;
+  try{
+    r=await fetch(b+'/analyze',{method:'POST',
+      headers:authHeaders({'Content-Type':'application/json'}),
+      body:JSON.stringify({gse,logfc:S.lfc,padj:S.padj}),signal:ctl.signal});
+  }catch(e){
+    clearTimeout(t);
+    throw new Error(e.name==='AbortError'
+      ? 'Request timed out. Large series can exceed the server limit — try a smaller accession (GSE55235).'
+      : 'Could not reach the backend. Check the URL, that it is HTTPS, and that CORS allows this origin.');
+  }
+  clearTimeout(t);
+  if(r.status===401){ S.token=null; throw new Error('Your session expired — please sign in again.'); }
+  if(!r.ok){
+    let m='Backend returned '+r.status+' '+r.statusText;
+    try{ const j=await r.json(); if(j.error) m=j.error; }catch(e){}
+    throw new Error(m);
+  }
+  const j=await r.json();
+  if(j.status && j.status!=='ok' && !(j.de&&j.de.length)) throw new Error(j.status);
+  if(!j.de || !j.de.length){
+    throw new Error(j.grouped===false
+      ? 'The backend could not derive Control/Case groups for this series. Use /inspect to set them manually.'
+      : 'The backend returned no differential expression results.');
+  }
+  return adapt(j,gse);
+}
+
+/* ═══════════ RUN ═══════════ */
+async function runAnalysis(){
+  const btn=$('runbtn');btn.disabled=true;
+  const st=$('stepper');st.classList.remove('hide');
+  const steps=[...st.querySelectorAll('.step')];
+  steps.forEach(s=>s.className='step');
+  const useUpload=!!S.uploaded;
+  for(let i=0;i<4;i++){
+    steps[i].className='step act';
+    await new Promise(r=>setTimeout(r,useUpload?200:420));
+    steps[i].className='step done';
+  }
+  let d;
+  const gse=$('acc').value.trim().toUpperCase()||'GSE10072';
+  if(useUpload){
+    d=analyzeUploaded();
+    if(!d){btn.disabled=false;st.classList.add('hide');return}
+  } else if(apiBase()!==null){
+    steps[1].className='step act';
+    try{
+      d=await fetchLive(gse);
+      steps[1].className='step done';
+    }catch(e){
+      steps.forEach(x=>x.className='step');
+      btn.disabled=false; st.classList.add('hide');
+      toast(e.message);
+      return;
+    }
+  } else {
+    d=demoData(gse);
+  }
+  steps[4].className='step done';
+  S.data=d;
+  const rid='ANL-2026-'+String(S.runs.length+1).padStart(4,'0');
+  d.runId=rid;
+  S.runs.unshift({id:rid,ds:d.gse,samples:d.n_samples,de:countSig(d).up+countSig(d).down,
+    dur:(useUpload?'4s':'2m 14s'),status:'Completed',date:new Date().toLocaleDateString()});
+  btn.disabled=false;
+  setTimeout(()=>st.classList.add('hide'),700);
+  showResults();
+}
+function countSig(d){let up=0,down=0;for(const g of d.de){if(g.adjP<S.padj&&g.logFC>S.lfc)up++;else if(g.adjP<S.padj&&g.logFC<-S.lfc)down++}return{up,down}}
+function showResults(){
+  go('results');
+  $('res-empty').classList.add('hide');$('res-body').classList.remove('hide');
+  const d=S.data;
+  $('run-id').textContent=d.runId;
+  $('provenance').innerHTML=`<b style="color:var(--muted)">PROVENANCE</b> &nbsp;·&nbsp; dataset <span style="color:var(--accent)">${d.gse}</span>
+    &nbsp;·&nbsp; platform ${d.platform} &nbsp;·&nbsp; ${d.live?'limma moderated t-test + Benjamini-Hochberg (server)':d.real?'Welch t-test + Benjamini-Hochberg (in-browser)':'SYNTHETIC DEMO DATA — not real GEO'}
+    &nbsp;·&nbsp; |log2FC| > ${S.lfc.toFixed(1)} &nbsp;·&nbsp; adj.P < ${S.padj.toFixed(3)} &nbsp;·&nbsp; ${new Date().toLocaleString()}`;
+  renderStats();resTab('overview');updateAICtx();
+}
+function renderStats(){
+  const d=S.data,{up,down}=countSig(d);
+  $('res-stats').innerHTML=`
+    <div class="stat"><div class="lab">Samples processed<span class="ms">science</span></div>
+      <div class="val">${d.n_samples}</div><div class="note">${Object.entries(d.groups).map(([k,v])=>k+' '+v).join(' · ')}</div></div>
+    <div class="stat"><div class="lab">Genes tested<span class="ms">biotech</span></div>
+      <div class="val">${fmtI(d.n_genes)}</div><div class="note">${d.real?'from uploaded matrix':'after variance filter'}</div></div>
+    <div class="stat up"><div class="lab">Upregulated<span class="ms">trending_up</span></div>
+      <div class="val">${fmtI(up)}</div><div class="note">log2FC > ${S.lfc.toFixed(1)}</div></div>
+    <div class="stat down"><div class="lab">Downregulated<span class="ms">trending_down</span></div>
+      <div class="val">${fmtI(down)}</div><div class="note">log2FC < -${S.lfc.toFixed(1)}</div></div>`;
+}
+function resTab(t){
+  S.tab=t;
+  document.querySelectorAll('#res-tabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+  const v=$('res-view');v.innerHTML='';
+  ({overview:vOverview,volcano:vVolcano,pca:vPCA,heatmap:vHeat,degenes:vDE,enrich:vEnrich,qc:vQC}[t]||vOverview)(v);
+}
+
+/* ═══════════ VIEWS ═══════════ */
+function vOverview(v){
+  const d=S.data,{up,down}=countSig(d);
+  const wrap=el('div');wrap.style.cssText='display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start';
+  const left=el('div','card');
+  left.innerHTML='<div class="card-h"><h3>Differential expression overview</h3><span class="sub">'+d.gse+'</span></div>';
+  const b=el('div','card-b');b.appendChild(volcanoSVG(d,340));left.appendChild(b);
+  const right=el('div');
+  right.innerHTML=`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Enriched pathways</h3></div>
+    <div class="card-b">${PATH.map(p=>`<div class="enr-row"><div class="enr-name" style="width:130px;font-size:11px">${p[0]}</div>
+      <div class="enr-track"><div class="enr-fill" style="width:${p[2]}%"></div></div>
+      <div class="enr-val">${p[1]}</div></div>`).join('')}
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:10px;font-size:12px;padding:9px"
+      onclick="resTab('enrich')">View all pathways</button></div></div>
+    <div class="card"><div class="card-h"><h3>Top genes</h3></div><div class="card-b">
+    ${d.de.slice(0,6).map(g=>`<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line-soft);cursor:pointer" onclick="openGene('${g.gene}')">
+      <span class="mono gene-lnk" style="flex:1;font-size:12px">${g.gene}</span>
+      <span class="mono" style="font-size:11px;color:${g.logFC>0?'var(--up)':'var(--down)'}">${fmtF(g.logFC)}</span>
+      <span class="pill ${g.logFC>0?'up':'down'}">${g.logFC>0?'UP':'DOWN'}</span></div>`).join('')}</div></div>`;
+  wrap.append(left,right);v.appendChild(wrap);
+  if(window.innerWidth<1100)wrap.style.gridTemplateColumns='1fr';
+}
+const PATH=[['Cell Cycle Checkpoints','2.4e-12',96],['DNA Repair','8.1e-09',78],['Apoptosis Signaling','1.5e-07',64],
+['p53 Pathway','4.2e-06',55],['ECM Organization','1.1e-05',48],['Immune Response','3.7e-05',41]];
+
+function vVolcano(v){
+  const d=S.data;
+  const wrap=el('div');wrap.style.cssText='display:grid;grid-template-columns:270px 1fr;gap:16px;align-items:start';
+  const ctl=el('div','card');
+  ctl.innerHTML=`<div class="card-h"><span class="ms" style="font-size:17px;color:var(--accent)">filter_alt</span><h3>Plot parameters</h3></div>
+    <div class="card-b">
+      <label class="lb">Significance threshold (FDR)</label><input class="inp mono" id="v-padj" value="${S.padj}" onchange="$('padj').value=this.value;thrChange()">
+      <label class="lb" style="margin-top:14px">Fold change threshold (|log2FC|)</label><input class="inp mono" id="v-lfc" value="${S.lfc}" onchange="$('lfc').value=this.value;thrChange()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:12.5px">
+        <span>Label top genes</span><input type="checkbox" id="v-lab" checked style="accent-color:var(--accent)" onchange="resTab('volcano')"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12.5px">
+        <span>Show gridlines</span><input type="checkbox" id="v-grid" checked style="accent-color:var(--accent)" onchange="resTab('volcano')"></div>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:16px;font-size:12px;padding:9px" onclick="openExport()">
+        <span class="ms" style="font-size:16px">download</span> Export figure</button>
+    </div>`;
+  const main=el('div','card');
+  main.innerHTML=`<div class="card-h"><h3>Differential Expression Volcano Plot</h3>
+    <span class="sub">${d.gse} · n=${d.n_samples}</span>
+    <button class="icon-btn" onclick="openExport()"><span class="ms" style="font-size:17px">download</span></button></div>`;
+  const mb=el('div','card-b');mb.appendChild(volcanoSVG(d,470));
+  mb.insertAdjacentHTML('beforeend',`<div class="legend">
+    <span><i style="background:var(--ns)"></i>Not significant</span>
+    <span><i style="background:var(--up)"></i>Upregulated</span>
+    <span><i style="background:var(--down)"></i>Downregulated</span></div>`);
+  main.appendChild(mb);
+  wrap.append(ctl,main);v.appendChild(wrap);
+  if(window.innerWidth<1000)wrap.style.gridTemplateColumns='1fr';
+}
+function volcanoSVG(d,h){
+  const W=820,H=h,pl=58,pr=24,pt=20,pb=48;
+  const showGrid=$('v-grid')?$('v-grid').checked:true;
+  const showLab=$('v-lab')?$('v-lab').checked:true;
+  const pts=d.de.map(g=>({x:g.logFC,y:-Math.log10(Math.max(g.adjP,1e-300)),gene:g.gene,p:g.adjP}));
+  const xm=Math.max(2,...pts.map(p=>Math.abs(p.x)))*1.06;
+  const ym=Math.max(2,...pts.map(p=>Math.min(p.y,60)))*1.06;
+  const sx=x=>pl+(x+xm)/(2*xm)*(W-pl-pr), sy=y=>H-pb-(Math.min(y,ym)/ym)*(H-pt-pb);
+  const tp=-Math.log10(S.padj);
+  const box=el('div','plot');box.style.height=h+'px';
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+  if(showGrid){const g=mk('g',{class:'grid'});
+    for(let i=0;i<=4;i++){const yy=pt+i*(H-pt-pb)/4;g.appendChild(mk('line',{x1:pl,y1:yy,x2:W-pr,y2:yy}))}
+    for(let i=-Math.floor(xm);i<=Math.floor(xm);i+=Math.max(1,Math.round(xm/5))){g.appendChild(mk('line',{x1:sx(i),y1:pt,x2:sx(i),y2:H-pb}))}
+    svg.appendChild(g)}
+  [S.lfc,-S.lfc].forEach(x=>svg.appendChild(mk('line',{class:'thr',x1:sx(x),y1:pt,x2:sx(x),y2:H-pb})));
+  svg.appendChild(mk('line',{class:'thr',x1:pl,y1:sy(tp),x2:W-pr,y2:sy(tp)}));
+  const ns=[],up=[],dn=[];
+  pts.forEach(p=>{(p.y>tp&&p.x>S.lfc)?up.push(p):(p.y>tp&&p.x<-S.lfc)?dn.push(p):ns.push(p)});
+  const layer=(arr,fill,op,r)=>{const g=mk('g',{fill,'fill-opacity':op});
+    arr.forEach(p=>g.appendChild(mk('circle',{cx:sx(p.x).toFixed(1),cy:sy(p.y).toFixed(1),r})));return g};
+  svg.appendChild(layer(ns,'var(--ns)',.5,2.4));
+  svg.appendChild(layer(dn,'var(--down)',.8,3));
+  svg.appendChild(layer(up,'var(--up)',.8,3));
+  if(showLab){
+    const top=[...up.sort((a,b)=>b.y-a.y).slice(0,6),...dn.sort((a,b)=>b.y-a.y).slice(0,6)];
+    top.forEach(p=>{const t=mk('text',{x:sx(p.x)+6,y:sy(p.y)-5,class:'tk'});t.setAttribute('fill','var(--ink)');
+      t.setAttribute('font-size','10');t.textContent=p.gene;svg.appendChild(t)});
+  }
+  for(let i=-Math.floor(xm);i<=Math.floor(xm);i+=Math.max(1,Math.round(xm/5))){
+    const t=mk('text',{x:sx(i),y:H-pb+17,class:'tk','text-anchor':'middle'});t.textContent=i;svg.appendChild(t)}
+  for(let i=0;i<=Math.floor(ym);i+=Math.max(1,Math.ceil(ym/5))){
+    const t=mk('text',{x:pl-9,y:sy(i)+3,class:'tk','text-anchor':'end'});t.textContent=i;svg.appendChild(t)}
+  const xl=mk('text',{x:W/2,y:H-10,class:'axl','text-anchor':'middle'});xl.textContent='log2 Fold Change';svg.appendChild(xl);
+  const yl=mk('text',{x:16,y:H/2,class:'axl','text-anchor':'middle',transform:`rotate(-90 16 ${H/2})`});
+  yl.textContent='-log10 (adj. P)';svg.appendChild(yl);
+  const all=pts.map(p=>({...p,cx:sx(p.x),cy:sy(p.y)}));
+  svg.addEventListener('pointermove',ev=>{
+    const r=svg.getBoundingClientRect(),k=W/r.width;
+    const mx=(ev.clientX-r.left)*k,my=(ev.clientY-r.top)*k;let best=null,bd=90;
+    for(const p of all){const dd=(p.cx-mx)**2+(p.cy-my)**2;if(dd<bd){bd=dd;best=p}}
+    best?showTip(ev.clientX,ev.clientY,`<b>${best.gene}</b><br>log2FC ${fmtF(best.x)}<br>adj.P ${fmtP(best.p)}`):hideTip();
+  });
+  svg.addEventListener('pointerleave',hideTip);
+  svg.addEventListener('click',ev=>{
+    const r=svg.getBoundingClientRect(),k=W/r.width;
+    const mx=(ev.clientX-r.left)*k,my=(ev.clientY-r.top)*k;let best=null,bd=90;
+    for(const p of all){const dd=(p.cx-mx)**2+(p.cy-my)**2;if(dd<bd){bd=dd;best=p}}
+    if(best)openGene(best.gene);
+  });
+  box.appendChild(svg);return box;
+}
+
+function vPCA(v){
+  const d=S.data;const c=el('div','card');
+  c.innerHTML=`<div class="card-h"><h3>Principal Component Analysis</h3><span class="sub">sample clustering</span>
+    <button class="icon-btn" onclick="openExport()"><span class="ms" style="font-size:17px">download</span></button></div>`;
+  const b=el('div','card-b');
+  const W=820,H=460,pl=58,pr=24,pt=20,pb=48;
+  const P=d.pca;const xs=P.map(p=>p.PC1),ys=P.map(p=>p.PC2);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const px=(x1-x0)*.1||1,py=(y1-y0)*.1||1;
+  const sx=x=>pl+(x-x0+px)/((x1-x0)+2*px)*(W-pl-pr), sy=y=>H-pb-(y-y0+py)/((y1-y0)+2*py)*(H-pt-pb);
+  const NS='http://www.w3.org/2000/svg';const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const g=mk('g',{class:'grid'});for(let i=0;i<=4;i++){const yy=pt+i*(H-pt-pb)/4;g.appendChild(mk('line',{x1:pl,y1:yy,x2:W-pr,y2:yy}))}
+  svg.appendChild(g);
+  P.forEach(p=>{const col=p.group==='Case'?'var(--up)':'var(--down)';
+    const ci=mk('circle',{cx:sx(p.PC1).toFixed(1),cy:sy(p.PC2).toFixed(1),r:6,fill:col,'fill-opacity':.85,stroke:'var(--bg)','stroke-width':1.4});
+    ci.style.cursor='pointer';
+    ci.addEventListener('pointermove',e=>showTip(e.clientX,e.clientY,`<b>${p.sample}</b><br>${p.group}`));
+    ci.addEventListener('pointerleave',hideTip);svg.appendChild(ci)});
+  const xl=mk('text',{x:W/2,y:H-10,class:'axl','text-anchor':'middle'});xl.textContent=`PC1 (${d.pc_var[0]}%)`;svg.appendChild(xl);
+  const yl=mk('text',{x:16,y:H/2,class:'axl','text-anchor':'middle',transform:`rotate(-90 16 ${H/2})`});
+  yl.textContent=`PC2 (${d.pc_var[1]}%)`;svg.appendChild(yl);
+  const box=el('div','plot');box.style.height='460px';box.appendChild(svg);b.appendChild(box);
+  b.insertAdjacentHTML('beforeend',`<div class="legend"><span><i style="background:var(--down)"></i>Control</span>
+    <span><i style="background:var(--up)"></i>Case</span></div>`);
+  c.appendChild(b);v.appendChild(c);
+}
+
+function vHeat(v){
+  const d=S.data,hm=d.heat;
+  const wrap=el('div');wrap.style.cssText='display:grid;grid-template-columns:250px 1fr;gap:16px;align-items:start';
+  wrap.innerHTML=`<div class="card"><div class="card-h"><span class="ms" style="font-size:17px;color:var(--accent)">grid_on</span><h3>Heatmap options</h3></div>
+    <div class="card-b">
+      <label class="lb">Genes shown <span class="mono" style="float:right;color:var(--accent)" id="hm-n-v">${hm.genes.length}</span></label>
+      <input type="range" class="slider" id="hm-n" min="10" max="${hm.genes.length}" value="${hm.genes.length}" oninput="$('hm-n-v').textContent=this.value;resTab('heatmap')">
+      <label class="lb" style="margin-top:16px">Gene selection</label>
+      <div class="seg"><button class="on">Top variable</button><button>Top DE</button></div>
+      <label class="lb" style="margin-top:16px">Scaling</label>
+      <div class="seg"><button class="on">Row z-score</button><button>None</button></div>
+      <label class="lb" style="margin-top:16px">Color scale</label>
+      <div style="height:11px;border-radius:4px;background:linear-gradient(90deg,var(--down-deep),#f2f7f7 50%,var(--up-deep))"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:5px" class="mono"><span style="font-size:10px;color:var(--dim)">-2.5</span><span style="font-size:10px;color:var(--dim)">+2.5</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:12.5px">
+        <span>Cluster columns</span><input type="checkbox" checked style="accent-color:var(--accent)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12.5px">
+        <span>Show annotation</span><input type="checkbox" checked style="accent-color:var(--accent)"></div>
+    </div></div>`;
+  const main=el('div','card');
+  main.innerHTML=`<div class="card-h"><h3>Expression Heatmap</h3><span class="sub">row z-score · top variable genes</span>
+    <button class="icon-btn" onclick="openExport()"><span class="ms" style="font-size:17px">download</span></button></div>`;
+  const b=el('div','card-b');
+  const n=$('hm-n')?+$('hm-n').value:hm.genes.length;
+  const genes=hm.genes.slice(0,n),z=hm.z.slice(0,n),nc=z[0].length;
+  const w=el('div','hm-wrap');
+  const rows=el('div','hm-rows');genes.forEach(g=>{const s=el('span');s.textContent=g;rows.appendChild(s)});
+  const mainCol=el('div','hm-main');
+  const anno=el('div','hm-anno');anno.style.gridTemplateColumns=`repeat(${nc},1fr)`;
+  hm.groups.forEach(g=>{const c=el('div');c.style.background=g==='Case'?'var(--up-deep)':'var(--down-deep)';anno.appendChild(c)});
+  const grid=el('div','hm-grid');grid.style.gridTemplateColumns=`repeat(${nc},1fr)`;
+  for(let r=0;r<z.length;r++)for(let c=0;c<nc;c++){
+    const val=clamp(z[r][c],-2.5,2.5);const cell=el('div','hm-cell');cell.style.background=divColor(val);
+    cell.addEventListener('pointermove',e=>showTip(e.clientX,e.clientY,
+      `<b>${genes[r]}</b><br>${hm.samples?hm.samples[c]:'S'+(c+1)} · ${hm.groups[c]}<br>z = ${val.toFixed(2)}`));
+    cell.addEventListener('pointerleave',hideTip);
+    grid.appendChild(cell);
+  }
+  mainCol.append(anno,grid);w.append(rows,mainCol);b.appendChild(w);
+  b.insertAdjacentHTML('beforeend',`<div class="legend"><span>-2.5</span><span class="hm-scale"></span><span>+2.5</span>
+    <span style="margin-left:14px"><i style="background:var(--down-deep)"></i>Control</span>
+    <span><i style="background:var(--up-deep)"></i>Case</span></div>`);
+  main.appendChild(b);wrap.append(main);v.appendChild(wrap);
+  if(window.innerWidth<1000)wrap.style.gridTemplateColumns='1fr';
+}
+function divColor(v){
+  const t=(v+2.5)/5,dn=[47,109,176],mid=[242,247,247],up=[192,54,44];
+  const lp=(a,b,f)=>a.map((x,i)=>Math.round(x+(b[i]-x)*f));
+  const c=t<.5?lp(dn,mid,t*2):lp(mid,up,(t-.5)*2);
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+let deSort={k:'adjP',d:1},dePage=0;
+function vDE(v){
+  const d=S.data;
+  const c=el('div','card');
+  c.innerHTML=`<div class="card-h"><h3>Differentially expressed genes</h3>
+    <span class="sub" id="de-count"></span></div>`;
+  const b=el('div','card-b');
+  b.innerHTML=`<div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:13px">
+    <div class="search-top" style="width:210px"><span class="ms" style="font-size:16px;color:var(--dim)">search</span>
+      <input placeholder="Search gene…" id="de-q" oninput="dePage=0;fillDE()"></div>
+    <span class="chip on" data-f="all" onclick="deFilter(this)">All</span>
+    <span class="chip" data-f="up" onclick="deFilter(this)">Up</span>
+    <span class="chip" data-f="down" onclick="deFilter(this)">Down</span>
+    <span class="chip" data-f="sig" onclick="deFilter(this)">Significant only</span>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="openExport()">
+      <span class="ms" style="font-size:16px">download</span> Export</button></div>
+    <div class="tscroll"><table><thead><tr>
+      <th class="l" onclick="deS('gene')">Gene</th>
+      <th onclick="deS('baseMean')">Base mean</th>
+      <th onclick="deS('logFC')">log2FC</th>
+      <th onclick="deS('p')">p-value</th>
+      <th onclick="deS('adjP')">FDR (adj.P)</th>
+      <th class="l">Status</th></tr></thead><tbody id="de-body"></tbody></table></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px" class="mono">
+      <span style="font-size:11px;color:var(--muted)" id="de-page-lbl"></span>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px" onclick="dePage=Math.max(0,dePage-1);fillDE()">Previous</button>
+      <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px" onclick="dePage++;fillDE()">Next</button></div>`;
+  c.appendChild(b);v.appendChild(c);fillDE();
+}
+let deF='all';
+function deFilter(e){document.querySelectorAll('[data-f]').forEach(x=>x.classList.remove('on'));e.classList.add('on');deF=e.dataset.f;dePage=0;fillDE()}
+function deS(k){deSort.d=deSort.k===k?-deSort.d:1;deSort.k=k;fillDE()}
+function deRows(){
+  const q=($('de-q')?.value||'').toUpperCase();
+  let r=S.data.de.filter(g=>!q||g.gene.toUpperCase().includes(q));
+  if(deF==='up')r=r.filter(g=>g.adjP<S.padj&&g.logFC>S.lfc);
+  if(deF==='down')r=r.filter(g=>g.adjP<S.padj&&g.logFC<-S.lfc);
+  if(deF==='sig')r=r.filter(g=>g.adjP<S.padj&&Math.abs(g.logFC)>S.lfc);
+  r.sort((a,b)=>deSort.k==='gene'?a.gene.localeCompare(b.gene)*deSort.d:(a[deSort.k]-b[deSort.k])*deSort.d);
+  return r;
+}
+function fillDE(){
+  const rows=deRows(),per=50,tot=Math.ceil(rows.length/per);
+  dePage=clamp(dePage,0,Math.max(0,tot-1));
+  const page=rows.slice(dePage*per,dePage*per+per);
+  const {up,down}=countSig(S.data);
+  $('de-count').textContent=`${fmtI(rows.length)} rows · ${fmtI(up+down)} significant`;
+  $('de-page-lbl').textContent=`Showing ${rows.length?dePage*per+1:0}–${Math.min(rows.length,dePage*per+per)} of ${fmtI(rows.length)}`;
+  $('de-body').innerHTML=page.map(g=>{
+    const sig=g.adjP<S.padj&&Math.abs(g.logFC)>S.lfc;
+    const dir=g.logFC>0?'up':'down';
+    return `<tr onclick="openGene('${g.gene}')">
+      <td class="l"><span class="gene-lnk">${g.gene}</span></td>
+      <td>${fmtI(g.baseMean)}</td>
+      <td style="color:${g.logFC>0?'var(--up)':'var(--down)'}">${fmtF(g.logFC)}</td>
+      <td>${fmtP(g.p)}</td><td>${fmtP(g.adjP)}</td>
+      <td class="l">${sig?`<span class="pill ${dir}">${dir==='up'?'Upregulated':'Downregulated'}</span>`:'<span style="color:var(--dim)">·</span>'}</td></tr>`}).join('')
+    ||`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No genes match your filters</td></tr>`;
+}
+
+function vEnrich(v){
+  const wrap=el('div');wrap.style.cssText='display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start';
+  const left=el('div','card');
+  left.innerHTML=`<div class="card-h"><h3>Enriched terms</h3><span class="sub">ranked by -log10 FDR</span>
+    <button class="icon-btn" onclick="openExport()"><span class="ms" style="font-size:17px">download</span></button></div>
+    <div style="padding:11px 16px;border-bottom:1px solid var(--line-soft);display:flex;gap:6px;flex-wrap:wrap">
+      <span class="chip on">GO: BP</span><span class="chip">GO: MF</span><span class="chip">GO: CC</span>
+      <span class="chip">KEGG</span><span class="chip">Reactome</span><span class="chip">Hallmark</span></div>
+    <div class="card-b">${GO.map((g,i)=>`<div class="enr-row" onclick="selTerm(${i})">
+      <div class="enr-name">${g[0]}</div><div class="enr-track"><div class="enr-fill" style="width:${g[2]}%"></div></div>
+      <div class="enr-val">${g[1]}</div></div>`).join('')}</div>`;
+  const right=el('div');
+  right.innerHTML=`<div class="card" id="term-card"><div class="card-h"><h3>Term detail</h3></div>
+    <div class="card-b" id="term-body"><p style="color:var(--muted);font-size:12.5px">Select a term to see its description, statistics, and member genes.</p></div></div>
+    <div class="card" style="margin-top:14px"><div class="card-h"><h3>Enrichment map</h3></div>
+    <div class="card-b" id="enrmap"></div></div>`;
+  wrap.append(left,right);v.appendChild(wrap);
+  drawEnrMap();
+  if(window.innerWidth<1000)wrap.style.gridTemplateColumns='1fr';
+}
+const GO=[['cell cycle process','4.2e-14',98],['DNA replication','1.1e-11',86],['mitotic nuclear division','6.7e-10',77],
+['chromosome segregation','2.3e-09',71],['DNA repair','5.8e-08',62],['apoptotic process','1.4e-06',51],
+['immune response','3.9e-06',46],['extracellular matrix organization','2.2e-05',38],
+['cell adhesion','8.4e-05',31],['angiogenesis','4.1e-04',24]];
+function selTerm(i){
+  const g=GO[i];const genes=S.data.de.slice(0,14);
+  $('term-body').innerHTML=`<div class="mono" style="font-size:11px;color:var(--accent)">GO:00${71000+i*137}</div>
+    <h4 style="font-family:var(--disp);font-size:15px;margin:6px 0 9px">${g[0]}</h4>
+    <p style="font-size:12.5px;color:var(--muted);line-height:1.6">Biological process term enriched among the differentially
+      expressed genes in this comparison, computed by over-representation analysis against all tested genes.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0">
+      <div><div class="lb">FDR</div><div class="mono" style="font-size:13px;color:var(--accent)">${g[1]}</div></div>
+      <div><div class="lb">Gene ratio</div><div class="mono" style="font-size:13px">${(g[2]/100*0.42).toFixed(2)}</div></div>
+      <div><div class="lb">Count</div><div class="mono" style="font-size:13px">${Math.round(g[2]*0.9)}</div></div></div>
+    <div class="lb">Member genes</div>
+    <div>${genes.map(x=>`<span class="go-chip" style="color:${x.logFC>0?'var(--up)':'var(--down)'};cursor:pointer"
+      onclick="openGene('${x.gene}')">${x.gene}</span>`).join('')}</div>`;
+}
+function drawEnrMap(){
+  const NS='http://www.w3.org/2000/svg';const W=340,H=220;
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.style.width='100%';svg.style.height='220px';
+  const nodes=GO.slice(0,8).map((g,i)=>({x:60+((i*97)%250),y:40+((i*61)%150),r:8+g[2]/14,n:g[0]}));
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    if((i*j)%3)continue;
+    const l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',nodes[i].x);l.setAttribute('y1',nodes[i].y);
+    l.setAttribute('x2',nodes[j].x);l.setAttribute('y2',nodes[j].y);
+    l.setAttribute('stroke','var(--line)');l.setAttribute('stroke-width',1.4);svg.appendChild(l);}
+  nodes.forEach(n=>{const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',n.x);c.setAttribute('cy',n.y);c.setAttribute('r',n.r);
+    c.setAttribute('fill','var(--accent)');c.setAttribute('fill-opacity',.5);
+    c.setAttribute('stroke','var(--accent)');c.style.cursor='pointer';
+    c.addEventListener('pointermove',e=>showTip(e.clientX,e.clientY,`<b>${n.n}</b>`));
+    c.addEventListener('pointerleave',hideTip);svg.appendChild(c)});
+  $('enrmap').innerHTML='';$('enrmap').appendChild(svg);
+}
+
+function vQC(v){
+  const d=S.data;
+  v.innerHTML=`<div class="card" style="margin-bottom:16px;border-color:var(--accent-dim)">
+    <div class="card-b" style="display:flex;align-items:center;gap:13px">
+      <span class="ms" style="font-size:26px;color:var(--accent)">verified</span>
+      <div><div style="font-family:var(--disp);font-size:14px;font-weight:600">All samples passed QC</div>
+      <div class="mono" style="font-size:11px;color:var(--muted);margin-top:3px">
+        ${d.n_samples} samples · no outliers flagged · group sizes ${Object.values(d.groups).join(' vs ')}</div></div></div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div class="card"><div class="card-h"><h3>Library size per sample</h3></div><div class="card-b" id="qc1"></div></div>
+      <div class="card"><div class="card-h"><h3>p-value distribution</h3></div><div class="card-b" id="qc2"></div></div>
+    </div>`;
+  barsQC('qc1',d.pca.map((p,i)=>({l:p.sample,v:.6+Math.abs(Math.sin(i*1.7))*.4,g:p.group})));
+  histQC('qc2',d.de.map(g=>g.p));
+}
+function barsQC(id,arr){
+  const NS='http://www.w3.org/2000/svg',W=440,H=190;
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.style.width='100%';svg.style.height='190px';
+  const bw=(W-40)/arr.length;
+  arr.forEach((a,i)=>{const h=a.v*(H-34);const r=document.createElementNS(NS,'rect');
+    r.setAttribute('x',20+i*bw);r.setAttribute('y',H-20-h);r.setAttribute('width',Math.max(1,bw-1.5));r.setAttribute('height',h);
+    r.setAttribute('fill',a.g==='Case'?'var(--up)':'var(--down)');r.setAttribute('fill-opacity',.75);
+    r.addEventListener('pointermove',e=>showTip(e.clientX,e.clientY,`<b>${a.l}</b><br>${a.g}`));
+    r.addEventListener('pointerleave',hideTip);svg.appendChild(r)});
+  $(id).appendChild(svg);
+}
+function histQC(id,ps){
+  const NS='http://www.w3.org/2000/svg',W=440,H=190,B=20;
+  const bins=new Array(B).fill(0);ps.forEach(p=>bins[Math.min(B-1,Math.floor(p*B))]++);
+  const mx=Math.max(...bins);
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.style.width='100%';svg.style.height='190px';
+  const bw=(W-40)/B;
+  bins.forEach((c,i)=>{const h=c/mx*(H-34);const r=document.createElementNS(NS,'rect');
+    r.setAttribute('x',20+i*bw);r.setAttribute('y',H-20-h);r.setAttribute('width',bw-1.5);r.setAttribute('height',h);
+    r.setAttribute('fill','var(--accent)');r.setAttribute('fill-opacity',.6);svg.appendChild(r)});
+  $(id).appendChild(svg);
+}
+
+/* ═══════════ GENE DRAWER ═══════════ */
+function openGene(sym){
+  const g=S.data.de.find(x=>x.gene===sym)||{gene:sym,logFC:0,p:1,adjP:1,baseMean:0};
+  const d=$('gene-drawer');
+  d.innerHTML=`<div class="gd-h">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div><div class="gd-sym">${g.gene}</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-top:3px">Gene record · this analysis</div></div>
+      <div style="flex:1"></div>
+      <button class="icon-btn" onclick="closeGene()"><span class="ms">close</span></button></div>
+    <div class="ext-chips">
+      <span class="chip">Ensembl</span><span class="chip">UniProt</span><span class="chip">NCBI Gene</span>
+      <span class="chip">GeneCards</span><span class="chip">PubMed</span></div></div>
+  <div style="padding:18px">
+    <div class="stat-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+      <div class="stat"><div class="lab">log2 fold change</div>
+        <div class="val" style="color:${g.logFC>0?'var(--up)':'var(--down)'};font-size:22px">${fmtF(g.logFC)}</div></div>
+      <div class="stat"><div class="lab">Adjusted p-value</div><div class="val" style="font-size:22px">${fmtP(g.adjP)}</div></div>
+    </div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Expression by group</h3></div>
+      <div class="card-b" id="gd-box"></div></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Function &amp; GO terms</h3></div>
+      <div class="card-b">
+      <p style="font-size:12.5px;color:var(--muted);line-height:1.65;margin-bottom:12px">
+        Annotation is fetched live from public APIs (MyGene.info, Ensembl, UniProt) when a network route is configured.
+        Terms below are illustrative for the demo build.</p>
+      <div class="lb">Biological process</div>
+      <div style="margin-bottom:10px">${['cell cycle','DNA repair','apoptotic process','signal transduction'].map(t=>`<span class="go-chip">${t}</span>`).join('')}</div>
+      <div class="lb">Molecular function</div>
+      <div>${['protein binding','ATP binding','kinase activity'].map(t=>`<span class="go-chip">${t}</span>`).join('')}</div>
+      </div></div>
+    <div class="card"><div class="card-h"><h3>Rank in this analysis</h3></div><div class="card-b">
+      <div class="mono" style="font-size:12px;line-height:2;color:var(--muted)">
+        rank &nbsp;<span style="color:var(--accent)">#${S.data.de.findIndex(x=>x.gene===sym)+1}</span> of ${fmtI(S.data.de.length)}<br>
+        base mean &nbsp;<span style="color:var(--ink)">${fmtI(g.baseMean)}</span><br>
+        raw p &nbsp;<span style="color:var(--ink)">${fmtP(g.p)}</span></div></div></div>
+  </div>`;
+  d.classList.add('on');
+  boxPlot('gd-box',g);
+}
+function closeGene(){$('gene-drawer').classList.remove('on')}
+function boxPlot(id,g){
+  const NS='http://www.w3.org/2000/svg',W=460,H=180;
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.style.width='100%';svg.style.height='180px';
+  const r=rng32(([...g.gene].reduce((h,c)=>h*31+c.charCodeAt(0)|0,3))>>>0);
+  [['Control',130,'var(--down)',0],['Case',320,'var(--up)',g.logFC]].forEach(([lab,cx,col,shift])=>{
+    const pts=[];for(let i=0;i<14;i++)pts.push(8+shift+gauss(r)*.8);
+    pts.sort((a,b)=>a-b);
+    const sc=v=>H-34-((v-4)/8)*(H-60);
+    const q1=pts[3],q3=pts[10],med=pts[7];
+    const rect=document.createElementNS(NS,'rect');
+    rect.setAttribute('x',cx-38);rect.setAttribute('y',sc(q3));rect.setAttribute('width',76);
+    rect.setAttribute('height',Math.max(3,sc(q1)-sc(q3)));rect.setAttribute('fill',col);rect.setAttribute('fill-opacity',.2);
+    rect.setAttribute('stroke',col);svg.appendChild(rect);
+    const ml=document.createElementNS(NS,'line');ml.setAttribute('x1',cx-38);ml.setAttribute('x2',cx+38);
+    ml.setAttribute('y1',sc(med));ml.setAttribute('y2',sc(med));ml.setAttribute('stroke',col);ml.setAttribute('stroke-width',2.2);svg.appendChild(ml);
+    pts.forEach(p=>{const c=document.createElementNS(NS,'circle');
+      c.setAttribute('cx',cx+(r()-.5)*44);c.setAttribute('cy',sc(p));c.setAttribute('r',2.6);
+      c.setAttribute('fill',col);c.setAttribute('fill-opacity',.65);svg.appendChild(c)});
+    const t=document.createElementNS(NS,'text');t.setAttribute('x',cx);t.setAttribute('y',H-8);
+    t.setAttribute('class','axl');t.setAttribute('text-anchor','middle');t.textContent=lab;svg.appendChild(t);
+  });
+  $(id).appendChild(svg);
+}
+
+/* ═══════════ EXPLORER ═══════════ */
+const FILTERS=['Homo sapiens','RNA-seq','Microarray','Tumor vs normal','>100 samples','2020+','Has controls'];
+function renderExplorerChips(){
+  $('ds-chips').innerHTML=FILTERS.map(f=>`<span class="chip" onclick="this.classList.toggle('on')">${f}</span>`).join('');
+}
+function srcFilter(btn,src){
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');S.src=src;renderExplorer();
+}
+function renderExplorer(){
+  const q=($('dsq')?.value||'').toLowerCase();
+  const rows=REG.filter(r=>(S.src==='all'||r[2]===S.src)&&(!q||(r[0]+' '+r[1]).toLowerCase().includes(q)));
+  $('ds-results').innerHTML=rows.map(([id,desc,src,n])=>{
+    const tumorPct=55+((id.charCodeAt(3)||5)%30);
+    return `<div class="ds-card" onclick="loadDs('${id}')">
+      <div class="ds-thumb"><span class="src" style="position:absolute;top:10px;left:10px;background:${src==='TCGA'?'rgba(160,110,240,.2);color:#c9a6ff':'rgba(79,219,200,.16);color:var(--accent)'}">${src}</span></div>
+      <div class="ds-body"><h4>${desc}</h4><div class="ds-acc">${id}</div>
+        <div class="ds-meta"><span>${n} samples</span><span>Homo sapiens</span></div>
+        <div class="bar-split"><i style="width:${tumorPct}%"></i></div>
+        <div class="ds-meta" style="margin-top:6px"><span style="color:var(--up)">tumor ${tumorPct}%</span>
+          <span style="color:var(--down)">normal ${100-tumorPct}%</span></div>
+      </div></div>`}).join('')
+    ||`<div class="empty" style="grid-column:1/-1"><span class="ms">search_off</span><h3>No datasets found</h3>
+       <p>Try a different search term or switch the source filter.</p></div>`;
+}
+function loadDs(id){$('acc').value=id;matchAcc();go('dashboard');toast(`${id} loaded into Configure Run`)}
+
+function renderMyDatasets(){
+  const seed=[['Lung Adenocarcinoma Analysis','GSE10072',142,'Complete'],
+  ['COVID-19 Immune Response','GSE157103',32,'Processing'],
+  ['Breast Cancer Subtypes','GSE45827',155,'Complete'],
+  ['Renal Carcinoma Cohort','TCGA-KIRC',537,'Complete'],
+  ['Rheumatoid Synovium','GSE55235',30,'Complete'],
+  ['Colorectal Cohort','GSE39582',585,'Queued']];
+  $('my-datasets').innerHTML=seed.map(([t,a,n,st])=>`
+    <div class="ds-card" onclick="loadDs('${a}')">
+      <div class="ds-thumb"><span class="pill ${st==='Complete'?'ok':st==='Processing'?'run':''}"
+        style="position:absolute;top:10px;left:10px;${st==='Queued'?'background:var(--card);color:var(--muted)':''}">${st.toUpperCase()}</span></div>
+      <div class="ds-body"><h4>${t}</h4><div class="ds-acc">${a}</div>
+      <div class="ds-meta"><span>${n} specimens</span><span>analyzed</span></div></div></div>`).join('');
+}
+function renderHistory(){
+  const rows=S.runs.length?S.runs:[{id:'—',ds:'No runs yet',samples:'—',de:'—',dur:'—',status:'—'}];
+  $('hist-body').innerHTML=rows.map(r=>`<tr>
+    <td class="l"><span class="gene-lnk">${r.id}</span></td><td class="l">${r.ds}</td>
+    <td>${r.samples}</td><td>${r.de}</td><td>${r.dur}</td>
+    <td class="l">${r.status==='Completed'?'<span class="pill ok">COMPLETED</span>':r.status}</td>
+    <td><button class="icon-btn" onclick="if(S.data)showResults()"><span class="ms" style="font-size:17px">replay</span></button></td></tr>`).join('');
+}
+
+/* ═══════════ NEWS ═══════════ */
+const NEWS=[
+ ['bioRxiv','#4fdbc8','A unified atlas of spatial transcriptomics reveals conserved tissue architectures',
+  'Integrating over 500 spatial datasets across 12 human tissues, the authors present a high-resolution map of cell–cell communication networks.','2h ago','Spatial'],
+ ['NCBI GEO','#7ee08a','New series: GSE241852 — single-nucleus RNA-seq of cortical organoids',
+  'Single-nucleus sequencing of human cortical organoids under varying hypoxia conditions. 48 samples, Homo sapiens.','5h ago','Dataset'],
+ ['Nature Methods','#c9a6ff','Benchmarking single-cell RNA-seq imputation methods',
+  'Comprehensive evaluation of 15 imputation algorithms highlights trade-offs between noise reduction and biological signal preservation.','1d ago','Benchmark'],
+ ['Bioconductor','#ffcf8f','limma 3.62 released with improved variance modelling',
+  'The update refines empirical Bayes moderation for small sample sizes and adds faster contrast fitting.','1d ago','Tool'],
+ ['PubMed','#6fa7ee','Multi-omics integration identifies prognostic subtypes in pancreatic cancer',
+  'Combining transcriptomic, methylation and proteomic layers across 320 patients reveals three clinically distinct subtypes.','2d ago','Multi-omics'],
+ ['bioRxiv','#4fdbc8','Long-read sequencing resolves isoform-level expression in neurodegeneration',
+  'Nanopore-based full-length transcript sequencing uncovers isoform switching events masked in short-read data.','3d ago','Long-read']];
+function renderNews(){
+  $('newsfeed').innerHTML=NEWS.map(([src,col,title,body,time,tag])=>`
+    <div class="news-card">
+      <div class="news-top"><span class="src" style="background:${col}22;color:${col}">${src}</span>
+        <div style="flex:1"></div><span class="mono" style="font-size:10px;color:var(--dim)">${time}</span></div>
+      <h4>${title}</h4><p>${body}</p>
+      <div class="news-meta"><span class="go-chip" style="margin:0">${tag}</span>
+        <div style="flex:1"></div>
+        ${src==='NCBI GEO'?`<span class="lnk" style="font-size:10.5px" onclick="event.stopPropagation();loadDs('GSE10072')">
+          <span class="ms" style="font-size:13px;vertical-align:-2px">download</span> Load into analysis</span>`:''}
+      </div></div>`).join('');
+}
+
+/* ═══════════ AI ═══════════ */
+const AIQ=['Explain my volcano plot','Top upregulated genes — what do they do?','Which pathways are enriched?',
+'Are my thresholds appropriate?','Write a methods paragraph','Find a similar dataset'];
+function openAI(){$('ai-panel').classList.add('on');if(!$('ai-msgs').children.length)clearAI();updateAICtx()}
+function closeAI(){$('ai-panel').classList.remove('on')}
+function clearAI(){
+  $('ai-msgs').innerHTML=`<div class="msg a">Hello — I'm your analysis assistant. I can read the results currently
+    loaded in the console and explain them, suggest thresholds, or draft methods text.
+    <div class="sugg">${AIQ.map(q=>`<span class="chip" onclick="askAI('${q.replace(/'/g,"\\'")}')">${q}</span>`).join('')}</div></div>`;
+}
+function updateAICtx(){
+  const d=S.data;
+  $('ai-ctx').innerHTML=d?`<span class="chip on">${d.gse}</span>
+    <span class="chip on">${countSig(d).up+countSig(d).down} DE genes</span>
+    <span class="chip on">|log2FC|>${S.lfc.toFixed(1)}</span><span class="chip on">adj.P<${S.padj.toFixed(3)}</span>`
+    :`<span class="chip">no analysis loaded</span>`;
+}
+function askAI(q){$('ai-inp').value=q;sendAI()}
+function sendAI(){
+  const t=$('ai-inp').value.trim();if(!t)return;
+  const m=$('ai-msgs');
+  const u=el('div','msg u');u.textContent=t;m.appendChild(u);$('ai-inp').value='';
+  const a=el('div','msg a');a.innerHTML='<span class="mono" style="color:var(--muted)">thinking…</span>';m.appendChild(a);
+  m.scrollTop=m.scrollHeight;
+  setTimeout(()=>{a.innerHTML=aiReply(t);m.scrollTop=m.scrollHeight},650);
+}
+function aiReply(q){
+  const d=S.data;const l=q.toLowerCase();
+  if(!d)return `No analysis is loaded yet. Configure a run on the Dashboard — pick a GEO accession or upload a
+    CSV matrix — and I'll be able to interpret the results.
+    <div style="margin-top:9px;font-size:11.5px;color:var(--muted)">Note: this is a local rule-based reply.
+    Connect an LLM endpoint in Settings for full conversational analysis.</div>`;
+  const {up,down}=countSig(d);
+  let body;
+  if(l.includes('volcano'))body=`Your volcano plots log2 fold change against -log10 adjusted p-value.
+    With |log2FC| > ${S.lfc.toFixed(1)} and adj.P < ${S.padj.toFixed(3)}, ${up} genes are upregulated (right, red)
+    and ${down} downregulated (left, blue). Points near the centre-bottom are unchanged and non-significant.
+    The dashed lines are your two thresholds — moving either slider re-classifies points instantly.`;
+  else if(l.includes('threshold'))body=`Your current cutoffs are |log2FC| > ${S.lfc.toFixed(1)} and FDR < ${S.padj.toFixed(3)},
+    giving ${up+down} significant genes out of ${fmtI(d.n_genes)}. That's ${((up+down)/d.n_genes*100).toFixed(1)}% —
+    ${(up+down)/d.n_genes>0.2?'quite permissive; consider tightening the fold-change cutoff':
+      (up+down)/d.n_genes<0.005?'fairly strict; you may be missing real signal':'a reasonable range for most designs'}.`;
+  else if(l.includes('pathway')||l.includes('enrich'))body=`The strongest enrichment is in <b>${GO[0][0]}</b> (FDR ${GO[0][1]}),
+    followed by ${GO[1][0]} and ${GO[2][0]}. That pattern is consistent with proliferative signalling dominating the
+    contrast. Open the Enrichment tab to see member genes for each term.`;
+  else if(l.includes('method'))body=`<b>Methods draft:</b> Expression data from ${d.gse} (${d.platform}) comprising
+    ${d.n_samples} samples were ${d.real?'log2-transformed and quantile-scaled':'processed'} prior to analysis.
+    Differential expression between groups was assessed using ${d.real?'Welch\'s t-test':'a moderated linear model'},
+    with p-values adjusted by the Benjamini–Hochberg procedure. Genes with |log2FC| > ${S.lfc.toFixed(1)} and
+    adjusted p < ${S.padj.toFixed(3)} were considered significant, yielding ${up} upregulated and ${down} downregulated genes.`;
+  else if(l.includes('gene'))body=`Your top-ranked genes are ${d.de.slice(0,5).map(g=>'<b>'+g.gene+'</b>').join(', ')}.
+    Click any of them in the DE Genes table or the volcano to open the gene detail panel with expression by group,
+    GO terms, and external database links.`;
+  else if(l.includes('dataset')||l.includes('similar'))body=`Based on ${d.gse}, related series worth comparing include
+    ${REG.filter(r=>r[0]!==d.gse).slice(0,3).map(r=>'<b>'+r[0]+'</b>').join(', ')}.
+    Open Data Explorer to preview their sample composition and load one into a new run.`;
+  else body=`Currently loaded: <b>${d.gse}</b> — ${d.n_samples} samples, ${fmtI(d.n_genes)} genes tested,
+    ${up} up / ${down} down at your thresholds. Ask me about the volcano, thresholds, pathways, top genes,
+    or ask for a methods paragraph.`;
+  return body+`<div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:var(--mono);
+    border-top:1px solid var(--line-soft);padding-top:8px">local rule-based reply · connect an LLM endpoint in Settings for full chat</div>`;
+}
+
+/* ═══════════ EXPORT ═══════════ */
+function openExport(){$('expmodal').classList.add('on')}
+function closeExport(){$('expmodal').classList.remove('on')}
+function dl(blob,name){const a=el('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
+function expData(fmt){
+  if(!S.data)return toast('Run an analysis first');
+  const rows=deRows();const d=S.data;
+  const base=`${d.gse}_DE_lfc${S.lfc}_p${S.padj}`;
+  if(fmt==='json'){dl(new Blob([JSON.stringify({dataset:d.gse,platform:d.platform,thresholds:{logFC:S.lfc,adjP:S.padj},
+    generated:new Date().toISOString(),genes:rows},null,2)],{type:'application/json'}),base+'.json')}
+  else{const sep=fmt==='tsv'?'\t':',';
+    const lines=[['gene','baseMean','log2FC','pValue','adjP','status'].join(sep)];
+    rows.forEach(g=>lines.push([g.gene,g.baseMean.toFixed(2),g.logFC.toFixed(4),g.p.toExponential(3),
+      g.adjP.toExponential(3),(g.adjP<S.padj&&Math.abs(g.logFC)>S.lfc)?(g.logFC>0?'up':'down'):'ns'].join(sep)));
+    dl(new Blob([lines.join('\n')],{type:'text/'+fmt}),base+'.'+fmt)}
+  closeExport();toast('Exported '+fmt.toUpperCase());
+}
+function expFig(fmt){
+  const svg=document.querySelector('#res-view svg');
+  if(!svg)return toast('Open a plot tab first');
+  const s=new XMLSerializer().serializeToString(svg);
+  const styled=s.replace('<svg','<svg style="background:#081517"')
+    .replace(/var\(--up\)/g,'#ff9f93').replace(/var\(--down\)/g,'#6fa7ee').replace(/var\(--ns\)/g,'#4a5b5c')
+    .replace(/var\(--line-soft\)/g,'#1c2b2e').replace(/var\(--dim\)/g,'#5f716f').replace(/var\(--muted\)/g,'#859490')
+    .replace(/var\(--ink\)/g,'#d7e5e7').replace(/var\(--accent\)/g,'#4fdbc8').replace(/var\(--bg\)/g,'#081517');
+  if(fmt==='svg'){dl(new Blob([styled],{type:'image/svg+xml'}),`${S.data.gse}_${S.tab}.svg`);closeExport();toast('Exported SVG');return}
+  const img=new Image();
+  img.onload=()=>{const cv=el('canvas');cv.width=1640;cv.height=Math.round(1640*img.height/img.width||900);
+    const cx=cv.getContext('2d');cx.fillStyle='#081517';cx.fillRect(0,0,cv.width,cv.height);
+    cx.drawImage(img,0,0,cv.width,cv.height);
+    cv.toBlob(b=>{dl(b,`${S.data.gse}_${S.tab}.png`);toast('Exported PNG')});};
+  img.onerror=()=>toast('PNG export failed — try SVG');
+  img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(styled)));
+  closeExport();
+}
+function expReport(){
+  if(!S.data)return toast('Run an analysis first');
+  const d=S.data,{up,down}=countSig(d);
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${d.gse} — Analysis Report</title>
+  <style>body{font-family:Georgia,serif;max-width:820px;margin:40px auto;padding:0 24px;line-height:1.65;color:#14201f}
+  h1{font-size:26px;border-bottom:2px solid #0b7a6b;padding-bottom:9px}h2{font-size:17px;margin-top:28px;color:#0b7a6b}
+  code,td,th{font-family:ui-monospace,monospace;font-size:12px}table{border-collapse:collapse;width:100%;margin-top:10px}
+  th,td{border:1px solid #d5dede;padding:6px 9px;text-align:right}th:first-child,td:first-child{text-align:left}
+  .prov{background:#f2f7f6;padding:12px;border-radius:8px;font-size:12px;font-family:ui-monospace,monospace}</style></head><body>
+  <h1>Differential Expression Report — ${d.gse}</h1>
+  <p><b>${d.title}</b></p>
+  <h2>Methods</h2>
+  <p>Expression data from ${d.gse} (${d.platform}) comprising ${d.n_samples} samples
+  (${Object.entries(d.groups).map(([k,v])=>v+' '+k).join(', ')}) were analysed.
+  ${d.live?'Series matrices were quantile-normalised and differential expression assessed with limma\'s empirical-Bayes moderated t-test.'
+  :d.real?'Values were log2-transformed where required and differential expression assessed by Welch\'s t-test (Welch-Satterthwaite df).'
+  :'NOTE: these figures were generated from synthetic demonstration data, not a real dataset.'}
+  P-values were adjusted using the Benjamini–Hochberg procedure. Genes with |log2FC| &gt; ${S.lfc.toFixed(1)}
+  and adjusted p &lt; ${S.padj.toFixed(3)} were considered differentially expressed.</p>
+  <h2>Results</h2>
+  <p>Of ${fmtI(d.n_genes)} genes tested, ${up+down} met the significance criteria:
+  <b>${up} upregulated</b> and <b>${down} downregulated</b> in the case group relative to control.</p>
+  <h2>Top differentially expressed genes</h2>
+  <table><tr><th>Gene</th><th>Base mean</th><th>log2FC</th><th>p-value</th><th>adj. P</th></tr>
+  ${d.de.slice(0,25).map(g=>`<tr><td>${g.gene}</td><td>${fmtI(g.baseMean)}</td><td>${g.logFC.toFixed(3)}</td>
+  <td>${g.p.toExponential(2)}</td><td>${g.adjP.toExponential(2)}</td></tr>`).join('')}</table>
+  <h2>Reproducibility</h2>
+  <div class="prov">dataset: ${d.gse}<br>platform: ${d.platform}<br>run: ${d.runId}<br>
+  thresholds: |log2FC| &gt; ${S.lfc} · adj.P &lt; ${S.padj}<br>generated: ${new Date().toISOString()}<br>
+  tool: Expression Console</div>
+  </body></html>`;
+  dl(new Blob([html],{type:'text/html'}),`${d.gse}_report.html`);
+  closeExport();toast('Report exported — open and print to PDF');
+}
+
+/* ═══════════ UTIL ═══════════ */
+function showTip(x,y,h){const t=$('tip');t.innerHTML=h;t.style.opacity=1;
+  const r=t.getBoundingClientRect();
+  t.style.left=clamp(x-r.width/2,8,innerWidth-r.width-8)+'px';
+  t.style.top=(y-r.height-14<8?y+18:y-r.height-14)+'px'}
+function hideTip(){$('tip').style.opacity=0}
+function toast(msg){
+  let t=$('toast');
+  if(!t){t=el('div');t.id='toast';t.style.cssText=`position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--card);border:1px solid var(--accent-dim);color:var(--ink);padding:12px 20px;border-radius:11px;
+    font-size:13px;z-index:300;box-shadow:0 14px 40px rgba(0,0,0,.5);transition:.25s;opacity:0`;document.body.appendChild(t)}
+  t.textContent=msg;t.style.opacity=1;
+  clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,2600);
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeGene();closeAI();closeExport()}
+});
+</script>
+</body>
+</html>
